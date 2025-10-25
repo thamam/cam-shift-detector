@@ -1,0 +1,215 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>3</storyId>
+    <title>Movement Detector</title>
+    <status>Ready</status>
+    <generatedAt>2025-10-21</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/story-1.3.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>camera movement detection system</asA>
+    <iWant>compare current frame features to baseline features using homography and calculate camera displacement</iWant>
+    <soThat>I can determine if the camera has moved beyond the 2-pixel threshold and return movement status with confidence scores</soThat>
+    <tasks>
+      <task id="1" ac="1.3.1,1.3.2">Create MovementDetector class (5 subtasks)</task>
+      <task id="2" ac="1.3.2,1.3.3">Implement homography estimation (6 subtasks)</task>
+      <task id="3" ac="1.3.4,1.3.5">Implement threshold validation and confidence (5 subtasks)</task>
+      <task id="4" ac="1.3.6">Implement error handling (4 subtasks)</task>
+      <task id="5" ac="all">Unit tests (7 test categories)</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="1.3.1" priority="high">
+      <title>Feature Matching</title>
+      <description>MovementDetector matches current features to baseline features using BFMatcher with NORM_HAMMING distance for ORB descriptors</description>
+    </ac>
+    <ac id="1.3.2" priority="high">
+      <title>Homography Estimation</title>
+      <description>Calculates homography transformation matrix from matched keypoint pairs; handles cases with insufficient matches (&lt;10) by returning appropriate status</description>
+    </ac>
+    <ac id="1.3.3" priority="high">
+      <title>Displacement Calculation</title>
+      <description>Computes displacement magnitude from homography matrix; extracts translation vector and calculates Euclidean distance in pixels (rounded to 2 decimals)</description>
+    </ac>
+    <ac id="1.3.4" priority="high">
+      <title>Threshold Validation</title>
+      <description>Compares displacement to configured threshold (default 2.0 pixels); returns `moved=True` if displacement >= threshold, `moved=False` otherwise</description>
+    </ac>
+    <ac id="1.3.5" priority="high">
+      <title>Confidence Score</title>
+      <description>Calculates confidence score [0.0, 1.0] based on inlier ratio from homography estimation; returns confidence with detection result</description>
+    </ac>
+    <ac id="1.3.6" priority="high">
+      <title>Error Handling</title>
+      <description>Raises appropriate exceptions for: Invalid feature inputs (not correct format for keypoints/descriptors), Insufficient feature matches (&lt;10 matches), Homography estimation failure (singular matrix, degenerate configuration)</description>
+    </ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-MVP-001.md</path>
+        <title>Technical Specification: Camera Movement Detection Module</title>
+        <section>Services and Modules</section>
+        <snippet>MovementDetector module: Compare features via homography, calculate displacement &amp; confidence. Inputs: Baseline features, current features. Outputs: (moved: bool, displacement: float, confidence: float)</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-MVP-001.md</path>
+        <title>Technical Specification: Camera Movement Detection Module</title>
+        <section>Data Models and Contracts</section>
+        <snippet>Confidence Score Calculation: Based on inlier ratio: confidence = num_inliers / total_matches. Range: [0.0, 1.0] where 1.0 = all matched points agree on transformation</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-MVP-001.md</path>
+        <title>Technical Specification: Camera Movement Detection Module</title>
+        <section>Acceptance Criteria</section>
+        <snippet>AC-001: Detection Accuracy - System detects camera movements >=2 pixels with >95% accuracy in Stage 1 testing (simulated transforms)</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/story-1.1.md</path>
+        <title>Story 1.1: Static Region Manager</title>
+        <section>Integration Pattern</section>
+        <snippet>StaticRegionManager provides binary masks (H×W, uint8: 255=static, 0=dynamic) for masked feature detection</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/story-1.2.md</path>
+        <title>Story 1.2: Feature Extractor</title>
+        <section>Integration Pattern</section>
+        <snippet>FeatureExtractor provides baseline features and current features as tuples: (List[cv2.KeyPoint], np.ndarray). Baseline set via set_baseline(), retrieved via get_baseline()</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>src/feature_extractor.py</path>
+        <kind>service</kind>
+        <symbol>FeatureExtractor</symbol>
+        <lines>17-168</lines>
+        <reason>Direct dependency - provides baseline and current features in the format MovementDetector expects: (keypoints, descriptors) tuple</reason>
+      </artifact>
+      <artifact>
+        <path>src/feature_extractor.py</path>
+        <kind>method</kind>
+        <symbol>get_baseline()</symbol>
+        <lines>105-120</lines>
+        <reason>Returns baseline features tuple needed as input to MovementDetector.detect_movement()</reason>
+      </artifact>
+      <artifact>
+        <path>src/feature_extractor.py</path>
+        <kind>method</kind>
+        <symbol>extract_features()</symbol>
+        <lines>50-86</lines>
+        <reason>Returns current features tuple needed as input to MovementDetector.detect_movement()</reason>
+      </artifact>
+      <artifact>
+        <path>src/static_region_manager.py</path>
+        <kind>service</kind>
+        <symbol>StaticRegionManager</symbol>
+        <lines>1-100</lines>
+        <reason>Indirect dependency via FeatureExtractor - provides masks for feature extraction workflow</reason>
+      </artifact>
+      <artifact>
+        <path>tests/test_feature_extractor.py</path>
+        <kind>test</kind>
+        <symbol>test suite</symbol>
+        <lines>all</lines>
+        <reason>Testing patterns and structure to follow for MovementDetector tests - uses pytest, fixtures, and parametrized tests</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <python>
+        <package name="numpy" version=">=1.24.0,&lt;2.0.0" purpose="Array operations, coordinate extraction, homography matrix manipulation"/>
+        <package name="opencv-python" version=">=4.8.0,&lt;5.0.0" purpose="BFMatcher (cv2.BFMatcher), homography estimation (cv2.findHomography), ORB keypoint types (cv2.KeyPoint, cv2.DMatch)"/>
+        <package name="pytest" version=">=7.0.0" purpose="Unit testing framework"/>
+        <package name="pytest-cov" version=">=4.0.0" purpose="Code coverage measurement"/>
+      </python>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Black-box design pattern: MovementDetector exposes only single public method detect_movement() with clear input/output contract</constraint>
+    <constraint type="architecture">No feature extraction or mask generation - pure comparison/detection logic only</constraint>
+    <constraint type="architecture">Module must integrate seamlessly with Stories 1.1 (StaticRegionManager) and 1.2 (FeatureExtractor) via tuple interface</constraint>
+    <constraint type="implementation">Use BFMatcher with NORM_HAMMING for ORB descriptor matching (crossCheck=True recommended)</constraint>
+    <constraint type="implementation">Homography estimation via cv2.findHomography() - simple method initially (method=0), RANSAC optional if testing reveals need</constraint>
+    <constraint type="implementation">Minimum 10 feature matches required for reliable homography estimation</constraint>
+    <constraint type="implementation">Displacement calculation: Extract translation vector (tx, ty) from H[0,2] and H[1,2], compute Euclidean distance sqrt(tx^2 + ty^2)</constraint>
+    <constraint type="implementation">Confidence score: num_inliers / total_matches from cv2.findHomography() mask output</constraint>
+    <constraint type="implementation">Round displacement to 2 decimal places for consistent precision</constraint>
+    <constraint type="configuration">threshold_pixels configurable via constructor (default 2.0), loaded from config.json in production</constraint>
+    <constraint type="testing">Coverage target: >80% for this module</constraint>
+    <constraint type="testing">Test framework: pytest with fixtures and parametrized tests (follow test_feature_extractor.py patterns)</constraint>
+    <constraint type="error-handling">Validate feature tuple format: (List[cv2.KeyPoint], np.ndarray)</constraint>
+    <constraint type="error-handling">Raise ValueError for insufficient matches with descriptive message including match count</constraint>
+    <constraint type="error-handling">Handle homography failure (None return) gracefully with appropriate exception</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>FeatureExtractor.get_baseline()</name>
+      <kind>function</kind>
+      <signature>def get_baseline(self) -> Tuple[List[cv2.KeyPoint], np.ndarray]</signature>
+      <path>src/feature_extractor.py</path>
+      <description>Returns stored baseline features as tuple (keypoints, descriptors). Raises RuntimeError if baseline not set. Used as first parameter to MovementDetector.detect_movement()</description>
+    </interface>
+    <interface>
+      <name>FeatureExtractor.extract_features()</name>
+      <kind>function</kind>
+      <signature>def extract_features(self, image: np.ndarray, mask: np.ndarray) -> Tuple[List[cv2.KeyPoint], np.ndarray]</signature>
+      <path>src/feature_extractor.py</path>
+      <description>Extracts ORB features from image using binary mask. Returns tuple (keypoints, descriptors). Used as second parameter to MovementDetector.detect_movement()</description>
+    </interface>
+    <interface>
+      <name>MovementDetector.detect_movement()</name>
+      <kind>function</kind>
+      <signature>def detect_movement(self, baseline_features: Tuple[List, np.ndarray], current_features: Tuple[List, np.ndarray]) -> Tuple[bool, float, float]</signature>
+      <path>src/movement_detector.py</path>
+      <description>Main detection method. Returns (moved, displacement, confidence) where moved=True if displacement >= threshold, displacement in pixels (2 decimals), confidence [0.0, 1.0]</description>
+    </interface>
+    <interface>
+      <name>cv2.BFMatcher</name>
+      <kind>class</kind>
+      <signature>cv2.BFMatcher(normType, crossCheck)</signature>
+      <path>opencv-python</path>
+      <description>Brute Force Matcher for feature matching. Use NORM_HAMMING for ORB descriptors, crossCheck=True for bidirectional matching</description>
+    </interface>
+    <interface>
+      <name>cv2.findHomography()</name>
+      <kind>function</kind>
+      <signature>cv2.findHomography(srcPoints, dstPoints, method=0) -> (H, mask)</signature>
+      <path>opencv-python</path>
+      <description>Finds homography transformation matrix. Returns H (3x3 matrix) and mask (inlier indicators). Method 0 = simple, cv2.RANSAC for robust estimation</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Use pytest framework with fixtures and parametrized tests. Follow existing patterns from test_feature_extractor.py. Coverage target >80%. Test categories: happy path, boundary conditions, error cases, edge cases. All tests must be independent and repeatable.</standards>
+    <locations>
+      <location>tests/test_movement_detector.py</location>
+    </locations>
+    <ideas>
+      <idea ac="1.3.1">Test BFMatcher configuration: verify NORM_HAMMING and crossCheck=True used</idea>
+      <idea ac="1.3.1">Test feature matching success with identical descriptors (should match perfectly)</idea>
+      <idea ac="1.3.1">Test feature matching with different descriptors (no matches expected)</idea>
+      <idea ac="1.3.2">Test homography estimation with sufficient matches (>= 10) - verify H matrix returned</idea>
+      <idea ac="1.3.2">Test insufficient matches (< 10) - verify ValueError raised with match count in message</idea>
+      <idea ac="1.3.3">Test displacement calculation: create known 3px shift, verify displacement ~3.0</idea>
+      <idea ac="1.3.3">Test displacement rounding: verify 2 decimal places (e.g., 2.345 -> 2.35)</idea>
+      <idea ac="1.3.3">Test translation extraction from homography matrix H[0,2] and H[1,2]</idea>
+      <idea ac="1.3.4">Test threshold validation: displacement 1.9px with threshold 2.0 -> moved=False</idea>
+      <idea ac="1.3.4">Test threshold validation: displacement 2.0px with threshold 2.0 -> moved=True (boundary)</idea>
+      <idea ac="1.3.4">Test threshold validation: displacement 2.5px with threshold 2.0 -> moved=True</idea>
+      <idea ac="1.3.5">Test confidence calculation: all inliers -> confidence = 1.0</idea>
+      <idea ac="1.3.5">Test confidence calculation: 50% inliers -> confidence = 0.5</idea>
+      <idea ac="1.3.5">Test confidence range: verify always in [0.0, 1.0]</idea>
+      <idea ac="1.3.6">Test invalid baseline_features format: not tuple, wrong tuple length, wrong types</idea>
+      <idea ac="1.3.6">Test invalid current_features format: None, wrong structure</idea>
+      <idea ac="1.3.6">Test homography failure handling: verify appropriate exception when cv2.findHomography returns None</idea>
+      <idea ac="all">Test complete pipeline: baseline features -> current features -> detect_movement -> verify all return values</idea>
+      <idea ac="all">Test zero displacement: identical features -> displacement = 0.0, moved=False</idea>
+    </ideas>
+  </tests>
+</story-context>
