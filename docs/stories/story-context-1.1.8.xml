@@ -1,0 +1,351 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/1.1.8" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>1.8</storyId>
+    <title>Comprehensive Test Coverage &amp; Integration Test Suite</title>
+    <status>Ready</status>
+    <generatedAt>2025-10-23</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/story-1.8.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>QA engineer and development team member</asA>
+    <iWant>comprehensive unit and integration test coverage for all MVP components</iWant>
+    <soThat>we can verify &gt;80% code coverage, validate API contracts, and ensure system reliability before Stage 1-3 validation testing</soThat>
+    <tasks>
+      <task id="1" ac="1.8.1">Audit existing test coverage</task>
+      <task id="2" ac="1.8.1,1.8.4">Add missing unit tests</task>
+      <task id="3" ac="1.8.2">Create integration test suite</task>
+      <task id="4" ac="1.8.3">Implement E2E workflow tests</task>
+      <task id="5" ac="1.8.4">Verify error handling coverage</task>
+      <task id="6" ac="1.8.7">Add performance benchmarks</task>
+      <task id="7" ac="1.8.8">Organize test data and fixtures</task>
+      <task id="8" ac="1.8.5,1.8.6">Document test framework</task>
+      <task id="9" ac="ALL">Validate test suite completeness</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-1.8.1">
+      <summary>Unit Test Coverage</summary>
+      <description>Achieve &gt;80% code coverage across all source modules (StaticRegionManager, FeatureExtractor, MovementDetector, ResultManager, CameraMovementDetector)</description>
+      <testable>true</testable>
+      <measurable>Yes - via pytest-cov coverage report</measurable>
+    </criterion>
+    <criterion id="AC-1.8.2">
+      <summary>Integration Test Suite</summary>
+      <description>Create integration tests validating CameraMovementDetector API contracts and component interactions</description>
+      <testable>true</testable>
+      <measurable>Yes - test file tests/test_integration.py exists with comprehensive scenarios</measurable>
+    </criterion>
+    <criterion id="AC-1.8.3">
+      <summary>End-to-End Workflow Tests</summary>
+      <description>Implement E2E tests for complete workflows (setup → baseline capture → detection → recalibration)</description>
+      <testable>true</testable>
+      <measurable>Yes - test file tests/test_e2e.py exists using real sample images</measurable>
+    </criterion>
+    <criterion id="AC-1.8.4">
+      <summary>Error Path Coverage</summary>
+      <description>Test all error handling paths (invalid inputs, missing files, insufficient features, initialization failures)</description>
+      <testable>true</testable>
+      <measurable>Yes - error path tests exist across all test modules</measurable>
+    </criterion>
+    <criterion id="AC-1.8.5">
+      <summary>Test Documentation</summary>
+      <description>Document test framework, test execution instructions, and coverage reporting in project README</description>
+      <testable>true</testable>
+      <measurable>Yes - README.md contains Testing section with full documentation</measurable>
+    </criterion>
+    <criterion id="AC-1.8.6">
+      <summary>CI/CD Readiness</summary>
+      <description>Ensure all tests can be executed via single command (pytest) and return appropriate exit codes</description>
+      <testable>true</testable>
+      <measurable>Yes - pytest command runs all tests and exits with code 0 on success</measurable>
+    </criterion>
+    <criterion id="AC-1.8.7">
+      <summary>Performance Benchmarks</summary>
+      <description>Add basic performance tests verifying process_frame() execution time &lt;500ms target</description>
+      <testable>true</testable>
+      <measurable>Yes - tests/test_performance.py exists with benchmark assertions</measurable>
+    </criterion>
+    <criterion id="AC-1.8.8">
+      <summary>Test Data Management</summary>
+      <description>Organize test fixtures, sample images, and mock data with clear documentation</description>
+      <testable>true</testable>
+      <measurable>Yes - tests/fixtures/ directory exists with README.md documentation</measurable>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-MVP-001.md</path>
+        <title>Technical Specification: Camera Movement Detection Module</title>
+        <section>Test Strategy Summary</section>
+        <snippet>Testing Framework: Unit Tests (pytest), Integration Tests, Stage 1-3 Validation. Test Levels: Unit (&gt;80% coverage, Week 1), Integration (API contracts, Week 1-2), Stage 1-3 Validation (simulated/real/live, Week 2-3). Coverage Target: &gt;80% code coverage for unit tests.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-MVP-001.md</path>
+        <title>Technical Specification: Camera Movement Detection Module</title>
+        <section>Acceptance Criteria</section>
+        <snippet>AC-001 to AC-011 define MVP acceptance criteria including detection accuracy (&gt;95%), zero false negatives, low false positive rate (&lt;5%), API integration, manual recalibration, system stability (1 week continuous), history buffer, ROI selection, baseline capture, error handling, and confidence score.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-MVP-001.md</path>
+        <title>Technical Specification: Camera Movement Detection Module</title>
+        <section>NFR → Performance</section>
+        <snippet>Latency Requirements: process_frame() &lt;500ms per call (target: &lt;200ms), ROI selection tool interactive response &lt;100ms, baseline capture &lt;2 seconds. Throughput: Detection frequency once every 5-10 minutes. Resource Constraints: Memory &lt;100MB, CPU &lt;5% idle / &lt;50% during process_frame().</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/story-1.8.md</path>
+        <title>Story 1.8: Comprehensive Test Coverage &amp; Integration Test Suite</title>
+        <section>Testing Standards</section>
+        <snippet>Test Categories: Unit (isolated, fast &lt;10ms, &gt;80% coverage), Integration (minimal mocking, medium &lt;100ms, all public APIs), E2E (no mocking, slower &lt;1s, critical workflows), Performance (pytest-benchmark, Tech Spec targets). Test Naming: test_&lt;component&gt;_&lt;behavior&gt;(), test_&lt;workflow&gt;_&lt;scenario&gt;(), test_&lt;user_story&gt;_with_&lt;condition&gt;().</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>src/camera_movement_detector.py</path>
+        <kind>main_api</kind>
+        <symbol>CameraMovementDetector</symbol>
+        <lines>all</lines>
+        <reason>Primary black-box API class - all methods must be integration tested</reason>
+      </artifact>
+      <artifact>
+        <path>src/static_region_manager.py</path>
+        <kind>module</kind>
+        <symbol>StaticRegionManager</symbol>
+        <lines>all</lines>
+        <reason>Core component handling ROI mask generation - needs comprehensive unit test coverage</reason>
+      </artifact>
+      <artifact>
+        <path>src/feature_extractor.py</path>
+        <kind>module</kind>
+        <symbol>FeatureExtractor</symbol>
+        <lines>all</lines>
+        <reason>Core component handling ORB feature extraction and baseline storage - needs comprehensive unit test coverage</reason>
+      </artifact>
+      <artifact>
+        <path>src/movement_detector.py</path>
+        <kind>module</kind>
+        <symbol>MovementDetector</symbol>
+        <lines>all</lines>
+        <reason>Core component handling homography and displacement calculation - needs comprehensive unit test coverage</reason>
+      </artifact>
+      <artifact>
+        <path>src/result_manager.py</path>
+        <kind>module</kind>
+        <symbol>ResultManager</symbol>
+        <lines>all</lines>
+        <reason>Core component handling result dict creation and history buffer - needs comprehensive unit test coverage</reason>
+      </artifact>
+      <artifact>
+        <path>tests/test_static_region_manager.py</path>
+        <kind>unit_test</kind>
+        <symbol>test_*</symbol>
+        <lines>all</lines>
+        <reason>Existing unit tests for StaticRegionManager (30 tests) - baseline for coverage audit</reason>
+      </artifact>
+      <artifact>
+        <path>tests/test_feature_extractor.py</path>
+        <kind>unit_test</kind>
+        <symbol>test_*</symbol>
+        <lines>all</lines>
+        <reason>Existing unit tests for FeatureExtractor (20 tests) - baseline for coverage audit</reason>
+      </artifact>
+      <artifact>
+        <path>tests/test_movement_detector.py</path>
+        <kind>unit_test</kind>
+        <symbol>test_*</symbol>
+        <lines>all</lines>
+        <reason>Existing unit tests for MovementDetector (25 tests) - baseline for coverage audit</reason>
+      </artifact>
+      <artifact>
+        <path>tests/test_result_manager.py</path>
+        <kind>unit_test</kind>
+        <symbol>test_*</symbol>
+        <lines>all</lines>
+        <reason>Existing unit tests for ResultManager (40 tests) - baseline for coverage audit</reason>
+      </artifact>
+      <artifact>
+        <path>tests/test_camera_movement_detector.py</path>
+        <kind>unit_test</kind>
+        <symbol>test_*</symbol>
+        <lines>all</lines>
+        <reason>Existing unit tests for CameraMovementDetector (35 tests) - baseline for coverage audit</reason>
+      </artifact>
+      <artifact>
+        <path>tests/test_select_roi.py</path>
+        <kind>tool_test</kind>
+        <symbol>test_*</symbol>
+        <lines>all</lines>
+        <reason>Existing tests for ROI selection tool (20 tests) - baseline for coverage audit</reason>
+      </artifact>
+      <artifact>
+        <path>tests/test_recalibrate.py</path>
+        <kind>tool_test</kind>
+        <symbol>test_*</symbol>
+        <lines>all</lines>
+        <reason>Existing tests for recalibration script (21 tests) - baseline for coverage audit</reason>
+      </artifact>
+      <artifact>
+        <path>tools/select_roi.py</path>
+        <kind>tool</kind>
+        <symbol>main</symbol>
+        <lines>all</lines>
+        <reason>ROI selection tool - should be tested in E2E operator workflow tests</reason>
+      </artifact>
+      <artifact>
+        <path>tools/recalibrate.py</path>
+        <kind>tool</kind>
+        <symbol>main</symbol>
+        <lines>all</lines>
+        <reason>Recalibration script - should be tested in E2E recalibration workflow tests</reason>
+      </artifact>
+      <artifact>
+        <path>sample_images/</path>
+        <kind>test_data</kind>
+        <symbol>real_site_images</symbol>
+        <lines>n/a</lines>
+        <reason>Real DAF site images (50 images across 3 sites) - use for E2E tests with actual image data</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <python>
+        <package name="numpy" version="&gt;=1.24.0,&lt;2.0.0" purpose="core"/>
+        <package name="opencv-python" version="&gt;=4.8.0,&lt;5.0.0" purpose="core"/>
+        <package name="pytest" version="&gt;=7.0.0" purpose="test"/>
+        <package name="pytest-cov" version="&gt;=4.0.0" purpose="test_coverage"/>
+        <package name="pytest-benchmark" version="optional" purpose="performance_tests"/>
+      </python>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="COVERAGE_TARGET">
+      <category>testing</category>
+      <description>Achieve minimum 80% code coverage across all source modules (src/)</description>
+      <source>tech-spec-epic-MVP-001.md#Test Strategy Summary</source>
+      <mandatory>true</mandatory>
+    </constraint>
+    <constraint id="TEST_PYRAMID">
+      <category>testing</category>
+      <description>Follow test pyramid: Strong unit test foundation + focused integration tests + minimal E2E tests</description>
+      <source>story-1.8.md#Testing Philosophy</source>
+      <mandatory>true</mandatory>
+    </constraint>
+    <constraint id="FAST_FEEDBACK">
+      <category>testing</category>
+      <description>Unit tests execute in &lt;10s, full suite in &lt;60s for fast feedback loops</description>
+      <source>story-1.8.md#Testing Philosophy</source>
+      <mandatory>true</mandatory>
+    </constraint>
+    <constraint id="DETERMINISTIC">
+      <category>testing</category>
+      <description>No flaky tests; all tests use fixtures/mocks for consistency and repeatability</description>
+      <source>story-1.8.md#Testing Philosophy</source>
+      <mandatory>true</mandatory>
+    </constraint>
+    <constraint id="MAINTAINABLE">
+      <category>testing</category>
+      <description>Tests document expected behavior; serve as living specification for the system</description>
+      <source>story-1.8.md#Testing Philosophy</source>
+      <mandatory>true</mandatory>
+    </constraint>
+    <constraint id="PERFORMANCE_TARGETS">
+      <category>performance</category>
+      <description>Performance benchmarks must validate: process_frame() &lt;500ms, set_baseline() &lt;2s, get_history() &lt;10ms</description>
+      <source>tech-spec-epic-MVP-001.md#NFR → Performance</source>
+      <mandatory>true</mandatory>
+    </constraint>
+    <constraint id="CI_CD_READY">
+      <category>testing</category>
+      <description>All tests executable via single pytest command with appropriate exit codes (0=success, non-zero=failure)</description>
+      <source>AC-1.8.6</source>
+      <mandatory>true</mandatory>
+    </constraint>
+    <constraint id="EXISTING_TEST_BASELINE">
+      <category>testing</category>
+      <description>191 existing tests provide foundation - do NOT break existing tests, only extend and enhance</description>
+      <source>story-1.8.md#Current Test Status</source>
+      <mandatory>true</mandatory>
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>pytest Test Framework</name>
+      <kind>testing_framework</kind>
+      <signature>pytest [options] [file_or_dir]</signature>
+      <path>tests/</path>
+      <usage>Primary test runner - all tests must be pytest-compatible and use pytest conventions (test_*.py files, test_* functions, assert statements)</usage>
+    </interface>
+    <interface>
+      <name>pytest-cov Coverage Plugin</name>
+      <kind>coverage_tool</kind>
+      <signature>pytest --cov=src --cov-report=html --cov-report=term</signature>
+      <path>n/a</path>
+      <usage>Generate coverage reports in HTML and terminal formats - must achieve &gt;80% coverage threshold</usage>
+    </interface>
+    <interface>
+      <name>pytest Fixtures</name>
+      <kind>test_setup</kind>
+      <signature>@pytest.fixture def fixture_name():</signature>
+      <path>tests/conftest.py</path>
+      <usage>Shared test setup and teardown logic - define fixtures in conftest.py for reuse across test modules</usage>
+    </interface>
+    <interface>
+      <name>pytest-benchmark (Optional)</name>
+      <kind>performance_testing</kind>
+      <signature>def test_performance(benchmark): result = benchmark(function, args)</signature>
+      <path>tests/test_performance.py</path>
+      <usage>Performance benchmarking for process_frame(), set_baseline(), get_history() - validates against Tech Spec targets</usage>
+    </interface>
+    <interface>
+      <name>unittest.mock</name>
+      <kind>mocking_library</kind>
+      <signature>from unittest.mock import Mock, patch, MagicMock</signature>
+      <path>tests/*.py</path>
+      <usage>Create mocks and patches for unit test isolation - used in existing tests for detector initialization, file I/O, etc.</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing framework: pytest with pytest-cov for coverage reporting. Test organization: tests/ directory with test_*.py modules. Naming conventions: test_&lt;component&gt;_&lt;behavior&gt;() for unit tests, test_&lt;workflow&gt;_&lt;scenario&gt;() for integration tests, test_&lt;user_story&gt;_with_&lt;condition&gt;() for E2E tests. Assertion patterns: assert exact values, assert ranges (0.0 &lt;= confidence &lt;= 1.0), assert structure ('status' in result), pytest.raises for exceptions. Existing baseline: 191 tests across 7 test files (30 StaticRegionManager, 20 FeatureExtractor, 25 MovementDetector, 40 ResultManager, 35 CameraMovementDetector, 20 select_roi, 21 recalibrate).
+    </standards>
+    <locations>
+      <location>tests/test_*.py</location>
+      <location>tests/conftest.py (shared fixtures)</location>
+      <location>tests/fixtures/ (test data and mocks)</location>
+      <location>tests/README.md (test documentation)</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-1.8.1" priority="high">
+        Run pytest --cov=src --cov-report=term to generate baseline coverage report. Identify modules with &lt;80% coverage. Add missing tests for uncovered branches, error paths, and edge cases in each module. Verify &gt;80% coverage achieved after additions.
+      </idea>
+      <idea ac="AC-1.8.2" priority="high">
+        Create tests/test_integration.py with scenarios: (1) Complete detection pipeline (config → init → baseline → process_frame), (2) Recalibration workflow (detect movement → recalibrate → baseline update), (3) History buffer persistence across multiple frames, (4) Error propagation between components (e.g., FeatureExtractor failure → MovementDetector → ResultManager).
+      </idea>
+      <idea ac="AC-1.8.3" priority="high">
+        Create tests/test_e2e.py with workflows: (1) Operator workflow using real sample images from sample_images/ (ROI selection → config → baseline → detection), (2) Recalibration workflow (detect INVALID → recalibrate → detect VALID), (3) DAF system integration pattern (mock external caller, verify status handling).
+      </idea>
+      <idea ac="AC-1.8.4" priority="medium">
+        Verify error path coverage across all test modules: (1) Invalid image formats (wrong dtype, dimensions, channels), (2) Missing/corrupted config files, (3) Insufficient features (&lt;50), (4) Baseline not set errors, (5) Invalid API parameter combinations. Ensure all error paths raise appropriate exceptions with clear messages.
+      </idea>
+      <idea ac="AC-1.8.7" priority="medium">
+        Create tests/test_performance.py with pytest-benchmark tests: (1) Benchmark process_frame() &lt;500ms target, (2) Benchmark set_baseline() &lt;2s target, (3) Benchmark get_history() &lt;10ms target. Use real images and typical workloads for realistic benchmarks.
+      </idea>
+      <idea ac="AC-1.8.8" priority="medium">
+        Organize test data: (1) Create tests/fixtures/configs/ with sample config.json files (valid, invalid, edge cases), (2) Create tests/fixtures/images/ with test images (baseline, shifted_2px, shifted_5px, feature_poor), (3) Create tests/conftest.py with pytest fixtures for common setup, (4) Document structure in tests/README.md.
+      </idea>
+      <idea ac="AC-1.8.5,AC-1.8.6" priority="high">
+        Add "Testing" section to main README.md documenting: (1) Test execution (pytest, pytest --cov=src), (2) Test categories (unit, integration, e2e, performance), (3) Coverage reporting (pytest-cov, htmlcov/), (4) CI/CD integration (single command execution, exit codes), (5) Coverage thresholds (&gt;80% requirement).
+      </idea>
+      <idea ac="ALL" priority="high">
+        Final validation: (1) Run pytest -v to verify 100% pass rate, (2) Run pytest --cov=src --cov-fail-under=80 to verify coverage threshold, (3) Verify all Tech Spec ACs (AC-001 to AC-011) are testable via existing or new tests, (4) Run tests on clean environment to verify dependencies correct, (5) Document any test gaps for post-MVP.
+      </idea>
+    </ideas>
+  </tests>
+</story-context>

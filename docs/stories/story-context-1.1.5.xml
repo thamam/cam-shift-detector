@@ -1,0 +1,169 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>1.5</storyId>
+    <title>Camera Movement Detector (Main API)</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-23</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/story-1.5.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>DAF water quality monitoring system</asA>
+    <iWant>integrate camera movement detection via a simple black-box API that processes frames and returns validation status</iWant>
+    <soThat>I can halt measurements when camera displacement is detected and prevent use of corrupted data</soThat>
+    <tasks>
+- Task 1: Create CameraMovementDetector class skeleton (AC: #1.5.1, #1.5.7)
+- Task 2: Implement baseline capture (AC: #1.5.2)
+- Task 3: Implement frame processing pipeline (AC: #1.5.3, #1.5.4)
+- Task 4: Implement history query interface (AC: #1.5.5)
+- Task 5: Implement manual recalibration (AC: #1.5.6)
+- Task 6: Error handling and edge cases (AC: #1.5.4)
+- Task 7: Integration tests (AC: #1.5.8)</tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. AC-1.5.1: Initialization & Config Loading - CameraMovementDetector loads configuration from JSON file, validates schema, initializes all internal components (StaticRegionManager, FeatureExtractor, MovementDetector, ResultManager)
+2. AC-1.5.2: Baseline Capture - set_baseline(image_array) captures initial reference features with validation (≥50 features required), raises ValueError if insufficient
+3. AC-1.5.3: Frame Processing - process_frame(image_array, frame_id) orchestrates full detection pipeline (mask → extract → detect → build result → store history) and returns standardized result dict
+4. AC-1.5.4: Runtime Error Handling - Raises RuntimeError if process_frame() called before baseline set; raises ValueError for invalid image formats; returns appropriate status on detection failures
+5. AC-1.5.5: History Query Interface - get_history(frame_id, limit) queries ResultManager history buffer, supports filtering by frame_id or limiting to last N results
+6. AC-1.5.6: Manual Recalibration - recalibrate(image_array) resets baseline features, validates minimum feature count, returns success/failure boolean
+7. AC-1.5.7: Config Validation - Validates config.json schema at initialization: required fields (roi, threshold_pixels, history_buffer_size, min_features_required), correct data types, reasonable value ranges
+8. AC-1.5.8: Integration Testing - System processes frames end-to-end with all components integrated, handles edge cases (insufficient matches, homography failures), maintains thread-safe operation if needed
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-MVP-001.md</path>
+        <title>Technical Specification: Camera Movement Detection Module</title>
+        <section>Services and Modules</section>
+        <snippet>CameraMovementDetector is the main black-box API that orchestrates all components, exposes only 3 public methods (process_frame, get_history, recalibrate), integrates with existing DAF camera interface via direct function calls</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-MVP-001.md</path>
+        <title>Technical Specification: Camera Movement Detection Module</title>
+        <section>APIs and Interfaces</section>
+        <snippet>Complete API signatures for CameraMovementDetector class with __init__(config_path), set_baseline(image_array), process_frame(image_array, frame_id), get_history(frame_id, limit), recalibrate(image_array). Returns standardized dict with status, displacement, confidence, frame_id, timestamp</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-MVP-001.md</path>
+        <title>Technical Specification: Camera Movement Detection Module</title>
+        <section>Data Models and Contracts</section>
+        <snippet>Configuration schema requires roi (x,y,width,height), threshold_pixels (float), history_buffer_size (int), min_features_required (int). Detection result schema defines status (VALID/INVALID), displacement (float), confidence [0.0-1.0], frame_id (str), timestamp (ISO 8601 UTC)</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-MVP-001.md</path>
+        <title>Technical Specification: Camera Movement Detection Module</title>
+        <section>Workflows and Sequencing</section>
+        <snippet>Setup workflow: operator selects ROI → validates ≥50 features → deploys config.json → initializes detector → captures baseline. Runtime workflow: get frame → process_frame() → returns result → DAF system checks status → halts if INVALID</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>src/static_region_manager.py</path>
+        <kind>service</kind>
+        <symbol>StaticRegionManager</symbol>
+        <lines>complete file</lines>
+        <reason>Story 1.1 component - provides get_static_mask() for ROI masking, must be initialized with config</reason>
+      </artifact>
+      <artifact>
+        <path>src/feature_extractor.py</path>
+        <kind>service</kind>
+        <symbol>FeatureExtractor</symbol>
+        <lines>complete file</lines>
+        <reason>Story 1.2 component - provides set_baseline(), extract_features(), get_baseline() for ORB feature management</reason>
+      </artifact>
+      <artifact>
+        <path>src/movement_detector.py</path>
+        <kind>service</kind>
+        <symbol>MovementDetector</symbol>
+        <lines>complete file</lines>
+        <reason>Story 1.3 component - provides detect_movement() returning (moved, displacement, confidence) via homography</reason>
+      </artifact>
+      <artifact>
+        <path>src/result_manager.py</path>
+        <kind>service</kind>
+        <symbol>ResultManager</symbol>
+        <lines>complete file</lines>
+        <reason>Story 1.4 component - provides create_result(), add_to_history(), get_history(), get_last_n(), get_by_frame_id() for result management</reason>
+      </artifact>
+      <artifact>
+        <path>config.json</path>
+        <kind>config</kind>
+        <symbol>N/A</symbol>
+        <lines>complete file</lines>
+        <reason>Configuration file loaded by CameraMovementDetector.__init__(), defines ROI coordinates, threshold, buffer size, min features</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <python>
+        <package name="opencv-python" version=">=4.8.0,<5.0.0">Computer vision library for ORB features, homography</package>
+        <package name="numpy" version=">=1.24.0,<2.0.0">Array operations, image manipulation</package>
+      </python>
+      <stdlib>
+        <module name="json">Config file loading</module>
+        <module name="typing">Type hints for API clarity</module>
+      </stdlib>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- Black-box design: Only expose CameraMovementDetector class with 3 public methods (set_baseline, process_frame, get_history, recalibrate)
+- Stateless operation: Each process_frame() call is independent; history buffer provides queryability without state persistence
+- Synchronous execution: Parent system calls detector synchronously every 5-10 minutes
+- No side effects: Returns status directly; no flag files, no REST calls, no database writes
+- Configuration-driven: ROI and thresholds defined in config.json, version-controlled with codebase
+- Integration point: Existing DAF camera interface provides NumPy image arrays (H×W×3, uint8, BGR)
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>CameraMovementDetector.__init__</name>
+      <kind>Constructor</kind>
+      <signature>def __init__(self, config_path: str = 'config.json') -> None</signature>
+      <path>src/camera_movement_detector.py</path>
+    </interface>
+    <interface>
+      <name>CameraMovementDetector.set_baseline</name>
+      <kind>Method</kind>
+      <signature>def set_baseline(self, image_array: np.ndarray) -> None</signature>
+      <path>src/camera_movement_detector.py</path>
+    </interface>
+    <interface>
+      <name>CameraMovementDetector.process_frame</name>
+      <kind>Method</kind>
+      <signature>def process_frame(self, image_array: np.ndarray, frame_id: Optional[str] = None) -> Dict[str, any]</signature>
+      <path>src/camera_movement_detector.py</path>
+    </interface>
+    <interface>
+      <name>CameraMovementDetector.get_history</name>
+      <kind>Method</kind>
+      <signature>def get_history(self, frame_id: Optional[str] = None, limit: Optional[int] = None) -> List[Dict[str, any]]</signature>
+      <path>src/camera_movement_detector.py</path>
+    </interface>
+    <interface>
+      <name>CameraMovementDetector.recalibrate</name>
+      <kind>Method</kind>
+      <signature>def recalibrate(self, image_array: np.ndarray) -> bool</signature>
+      <path>src/camera_movement_detector.py</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Testing framework: pytest with >80% code coverage target. Test categories: initialization (config loading, validation), baseline capture (valid/invalid images), frame processing (full pipeline, error handling), history queries (filter by frame_id, limit), recalibration (success/failure), error cases (baseline not set, invalid formats), integration (end-to-end with real sample images from sample_images/)</standards>
+    <locations>tests/test_camera_movement_detector.py</locations>
+    <ideas>
+- AC-1.5.1: Test config loading from valid JSON, test invalid config schemas (missing fields, wrong types), test FileNotFoundError for missing config
+- AC-1.5.2: Test baseline capture with valid image (≥50 features), test ValueError on insufficient features, test invalid image format error
+- AC-1.5.3: Test full process_frame pipeline returns correct result dict structure, test with real sample images from sample_images/
+- AC-1.5.4: Test RuntimeError when process_frame called before set_baseline, test ValueError on invalid image formats
+- AC-1.5.5: Test get_history() returns all results, test get_history(frame_id) filters correctly, test get_history(limit=N) returns last N results
+- AC-1.5.6: Test recalibrate() success case returns True, test recalibrate() with insufficient features returns False
+- AC-1.5.7: Test config validation catches missing ROI fields, test validation catches negative thresholds, test validation catches non-integer buffer sizes
+- AC-1.5.8: Integration test full workflow (init → set_baseline → process_frame → get_history), performance test process_frame < 500ms
+    </ideas>
+  </tests>
+</story-context>
