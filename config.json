@@ -1,0 +1,13 @@
+{
+  "roi": {
+    "x": 9,
+    "y": 14,
+    "width": 275,
+    "height": 966
+  },
+  "threshold_pixels": 1.0,
+  "history_buffer_size": 100,
+  "min_features_required": 50,
+  "orb_features": 500,
+  "use_affine_model": true
+}
