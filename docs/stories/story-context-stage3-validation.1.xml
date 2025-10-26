@@ -1,0 +1,320 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>stage3-validation</epicId>
+    <storyId>1</storyId>
+    <title>Validation Infrastructure & Data Foundation</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-25</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/story-stage3-validation-1.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>validation engineer</asA>
+    <iWant>a robust data loading infrastructure with ground truth annotations</iWant>
+    <soThat>the validation test harness has a reliable foundation for systematic testing against real DAF imagery</soThat>
+    <tasks>
+      <phase id="1" ac="AC1">
+        <task>Create validation/ directory structure</task>
+        <task>Create validation/__init__.py</task>
+        <task>Create validation/ground_truth/ directory</task>
+        <task>Define ground truth JSON schema in annotation_schema.json</task>
+        <task>Create empty validation/results/ directory</task>
+      </phase>
+      <phase id="2" ac="AC2">
+        <task>Create validation/real_data_loader.py</task>
+        <task>Implement ImageMetadata dataclass (image_path, site_id, timestamp, has_shift)</task>
+        <task>Implement RealDataLoader class with load_dataset() and load_image() methods</task>
+        <task>Add metadata extraction from filenames</task>
+        <task>Add image format validation (OpenCV compatibility check)</task>
+        <task>Test data loader on sample subset (5 images)</task>
+      </phase>
+      <phase id="3" ac="AC3">
+        <task>Review annotation guidelines (shift detection criteria)</task>
+        <task>Manually annotate OF_JERUSALEM images (23 images)</task>
+        <task>Manually annotate CARMIT images (17 images)</task>
+        <task>Manually annotate GAD images (10 images)</task>
+        <task>Populate ground_truth.json with all annotations</task>
+        <task>Assign confidence levels (high/medium/low) to each annotation</task>
+        <task>Perform quality assurance review (double-check unclear cases)</task>
+      </phase>
+      <phase id="4" ac="AC4">
+        <task>Create tests/validation/test_data_loader.py</task>
+        <task>Write test for loading all 50 images</task>
+        <task>Write test for metadata extraction</task>
+        <task>Write test for invalid image handling</task>
+        <task>Write test for schema validation</task>
+        <task>Run pytest and ensure 100% test coverage</task>
+        <task>Verify data loader works with ground truth integration</task>
+      </phase>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC1">
+      <title>Validation Directory Structure Created</title>
+      <items>
+        <item>validation/ directory exists with proper subdirectories</item>
+        <item>ground_truth/ directory with ground_truth.json and annotation_schema.json</item>
+        <item>results/ directory for validation outputs</item>
+        <item>__init__.py files for Python package structure</item>
+      </items>
+    </criterion>
+    <criterion id="AC2">
+      <title>Real Data Loader Implemented</title>
+      <items>
+        <item>RealDataLoader class successfully loads all 50 images from sample_images/</item>
+        <item>Metadata extraction works correctly (site_id, timestamp from filenames)</item>
+        <item>Image validation detects invalid formats or corrupted images</item>
+        <item>Returns structured ImageMetadata objects with all required fields</item>
+      </items>
+    </criterion>
+    <criterion id="AC3">
+      <title>Ground Truth Annotations Completed</title>
+      <items>
+        <item>All 50 sample images manually reviewed and annotated</item>
+        <item>ground_truth.json follows defined schema with version, annotator, date</item>
+        <item>Each annotation includes: image_path, site_id, has_camera_shift, confidence level</item>
+        <item>Schema validation passes for all annotations</item>
+        <item>Quality assurance review completed (no missing annotations)</item>
+      </items>
+    </criterion>
+    <criterion id="AC4">
+      <title>Data Loader Tests Passing</title>
+      <items>
+        <item>Test loading all 50 images without errors</item>
+        <item>Test metadata extraction accuracy</item>
+        <item>Test handling of invalid image paths</item>
+        <item>Test schema validation logic</item>
+        <item>100% test coverage on data loading functionality</item>
+      </items>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/product-brief-cam-shift-detector-2025-10-25.md</path>
+        <title>Stage 3 Validation Framework Product Brief</title>
+        <section>Problem Statement & Proposed Solution</section>
+        <snippet>Establishes strategic context for Stage 3: bridging synthetic validation success (100% on controlled data) with real-world performance confidence. Defines success as "detector works reliably on real DAF imagery" with quantifiable benchmarks.</snippet>
+      </doc>
+      <doc>
+        <path>docs/product-brief-executive-cam-shift-detector-2025-10-25.md</path>
+        <title>Executive Summary - Stage 3 Validation</title>
+        <section>MVP Scope & Technical Specifications</section>
+        <snippet>Core features: Real data loader (50 images, 3 sites), validation test harness, performance profiler. Success criteria: ≥95% accuracy, ≤5% false positives, ≤500 MB memory, ≥1/60 Hz processing.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec.md</path>
+        <title>Stage 3 Validation Framework Technical Specification</title>
+        <section>Technical Details → Real Data Loader Implementation</section>
+        <snippet>Defines ImageMetadata dataclass structure (image_path: Path, site_id: str, timestamp: datetime, has_shift: bool). RealDataLoader methods: load_dataset() → List[ImageMetadata], load_image(path: str) → np.ndarray. Ground truth JSON schema: version, annotator, annotation_date, images array.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec.md</path>
+        <title>Stage 3 Validation Framework Technical Specification</title>
+        <section>Source Tree Structure</section>
+        <snippet>Defines validation/ directory structure: __init__.py, real_data_loader.py, ground_truth/ground_truth.json, ground_truth/annotation_schema.json, results/ directory. Reuses existing sample_images/ (OF_JERUSALEM: 23, CARMIT: 17, GAD: 10).</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec.md</path>
+        <title>Stage 3 Validation Framework Technical Specification</title>
+        <section>Implementation Guide → Phase 1-2</section>
+        <snippet>Phase 1 (1 day): Create directory structure, set up ground truth JSON schema, create empty Python files. Phase 2 (1 day): Implement RealDataLoader, create ground truth annotations (manual review 50 images), test data loader. Total: 3 story points, 2 days estimated.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic Breakdown - Stage 3 Real-World Validation System</title>
+        <section>Story 1 Summary</section>
+        <snippet>Build foundational validation infrastructure: directory structure, RealDataLoader class loading 50 DAF images, ground_truth.json with manual annotations, data loader tests. Deliverables: validation/ structure with schemas, working data loader, complete annotations, passing tests.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Project README - Sample Images Overview</title>
+        <section>Dataset Distribution</section>
+        <snippet>50 systematically sampled images from 3 DAF sites. OF_JERUSALEM: 23 images (UUID: 9bc4603f), CARMIT: 17 images (UUID: e2336087), GAD: 10 images (UUID: f10f17d4). Located in sample_images/ with subdirectories. Source: /home/thh3/data/greenpipe/.</snippet>
+      </doc>
+      <doc>
+        <path>README.md</path>
+        <title>Camera Shift Detector Project README</title>
+        <section>Project Status</section>
+        <snippet>Development in progress - Stage 2 validation complete. Computer vision system for detecting camera movement in time-series imagery using feature matching and transformation analysis. Stage 3 (real-world validation) is next milestone.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>sample_images/of_jerusalem/</path>
+        <kind>data-directory</kind>
+        <symbol>N/A (image files)</symbol>
+        <lines>N/A</lines>
+        <reason>Contains 23 real DAF images from OF_JERUSALEM site. RealDataLoader must scan this directory and load images for validation. Images are systematically sampled from 14,039 total frames.</reason>
+      </artifact>
+      <artifact>
+        <path>sample_images/carmit/</path>
+        <kind>data-directory</kind>
+        <symbol>N/A (image files)</symbol>
+        <lines>N/A</lines>
+        <reason>Contains 17 real DAF images from CARMIT site. RealDataLoader must scan this directory and load images for validation. Images are systematically sampled from 10,430 total frames.</reason>
+      </artifact>
+      <artifact>
+        <path>sample_images/gad/</path>
+        <kind>data-directory</kind>
+        <symbol>N/A (image files)</symbol>
+        <lines>N/A</lines>
+        <reason>Contains 10 real DAF images from GAD site. RealDataLoader must scan this directory and load images for validation. Images are systematically sampled from 5,736 total frames.</reason>
+      </artifact>
+      <artifact>
+        <path>src/camera_movement_detector.py</path>
+        <kind>module-main-api</kind>
+        <symbol>CameraMovementDetector</symbol>
+        <lines>1-400 (approximate)</lines>
+        <reason>Main detection API from Epic 1. This is the system under test for Stage 3 validation. RealDataLoader will provide images to this detector, and test harness (Story 2) will execute it. Do not modify - reuse as-is.</reason>
+      </artifact>
+      <artifact>
+        <path>src/__init__.py</path>
+        <kind>python-package</kind>
+        <symbol>N/A</symbol>
+        <lines>N/A</lines>
+        <reason>Existing Python package structure for src/. Use same pattern for validation/ directory (create validation/__init__.py).</reason>
+      </artifact>
+      <artifact>
+        <path>tests/__init__.py</path>
+        <kind>python-package</kind>
+        <symbol>N/A</symbol>
+        <lines>N/A</lines>
+        <reason>Existing test package structure. Follow same pattern for tests/validation/ subdirectory.</reason>
+      </artifact>
+      <artifact>
+        <path>tests/test_camera_movement_detector.py</path>
+        <kind>test-reference</kind>
+        <symbol>Various test classes</symbol>
+        <lines>1-500 (approximate)</lines>
+        <reason>Reference for testing patterns used in Epic 1. Follow similar structure for tests/validation/test_data_loader.py: pytest framework, assertion patterns, fixture usage.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <python>
+        <package name="opencv-python" version="4.8.0">Computer vision library for image loading and processing</package>
+        <package name="numpy" version="1.24.3">Numerical computing for array operations</package>
+        <package name="pytest" version="7.4.0">Testing framework for data loader tests</package>
+        <package name="pathlib" version="stdlib">Cross-platform path handling (standard library)</package>
+        <package name="json" version="stdlib">Ground truth JSON parsing and validation (standard library)</package>
+        <package name="dataclasses" version="stdlib">ImageMetadata dataclass definition (standard library, Python 3.7+)</package>
+      </python>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint category="architecture">
+      <title>Directory Structure Compliance</title>
+      <description>Must follow exact directory structure defined in tech-spec.md. validation/ directory must contain: __init__.py, real_data_loader.py, ground_truth/ (with ground_truth.json and annotation_schema.json), results/. Do not deviate from structure.</description>
+    </constraint>
+    <constraint category="data-handling">
+      <title>Image Loading Standards</title>
+      <description>Use OpenCV (cv2.imread) for image loading to match existing detection system. Must handle RGB/BGR color spaces consistently with Epic 1 codebase.</description>
+    </constraint>
+    <constraint category="ground-truth">
+      <title>Manual Annotation Required</title>
+      <description>Ground truth annotations are MANUAL work requiring human review of 50 images. Estimated 4-6 hours. No automated annotation tool - direct JSON file editing or simple script-assisted annotation.</description>
+    </constraint>
+    <constraint category="testing">
+      <title>100% Test Coverage Requirement</title>
+      <description>AC4 mandates 100% test coverage on data loading functionality. Use pytest with coverage plugin (pytest-cov) to measure and verify.</description>
+    </constraint>
+    <constraint category="integration">
+      <title>Non-Invasive Design</title>
+      <description>This story is pure additive - NO modifications to existing Epic 1 codebase (src/, tests/). Only add new validation/ directory and tests/validation/ subdirectory.</description>
+    </constraint>
+    <constraint category="python-standards">
+      <title>Python 3.8+ Compatibility</title>
+      <description>Code must run on Python 3.8+ (production environment requirement). Use typing annotations, dataclasses (3.7+), pathlib (3.4+). Avoid Python 3.9+ only features (e.g., dict union operator |).</description>
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>ImageMetadata</name>
+      <kind>dataclass</kind>
+      <signature>@dataclass
+class ImageMetadata:
+    image_path: Path
+    site_id: str  # 'of_jerusalem', 'carmit', 'gad'
+    timestamp: datetime  # Extracted from filename
+    has_shift: bool  # From ground truth</signature>
+      <path>validation/real_data_loader.py</path>
+    </interface>
+    <interface>
+      <name>RealDataLoader.load_dataset</name>
+      <kind>method</kind>
+      <signature>def load_dataset(self) -> List[ImageMetadata]:
+    """Scan sample_images/ directory and return metadata for all 50 images."""
+    pass</signature>
+      <path>validation/real_data_loader.py</path>
+    </interface>
+    <interface>
+      <name>RealDataLoader.load_image</name>
+      <kind>method</kind>
+      <signature>def load_image(self, path: str) -> np.ndarray:
+    """Load and validate single image using OpenCV. Returns RGB image array."""
+    pass</signature>
+      <path>validation/real_data_loader.py</path>
+    </interface>
+    <interface>
+      <name>ground_truth.json Schema</name>
+      <kind>json-schema</kind>
+      <signature>{
+  "version": "1.0",
+  "annotator": "Tomer",
+  "annotation_date": "2025-10-25",
+  "images": [
+    {
+      "image_path": "sample_images/of_jerusalem/image_001.jpg",
+      "site_id": "of_jerusalem",
+      "has_camera_shift": true|false,
+      "confidence": "high|medium|low",
+      "notes": "Optional annotation notes"
+    }
+  ]
+}</signature>
+      <path>validation/ground_truth/ground_truth.json</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing framework: pytest 7.4.0. Follow existing test patterns from tests/test_*.py (Epic 1). Use pytest fixtures for reusable test data. Organize tests with descriptive class names (TestRealDataLoader, TestImageMetadata, TestGroundTruthValidation). Use clear assertion messages. Measure coverage with pytest-cov plugin. Target: 100% coverage on data loading logic (AC4 requirement).
+    </standards>
+    <locations>
+      <location>tests/validation/</location>
+      <location>tests/validation/test_data_loader.py</location>
+      <location>tests/validation/__init__.py</location>
+    </locations>
+    <ideas>
+      <testIdea ac="AC1">
+        <description>Test directory structure creation: verify validation/, ground_truth/, results/ exist with correct __init__.py files</description>
+      </testIdea>
+      <testIdea ac="AC2">
+        <description>Test RealDataLoader.load_dataset(): verify returns exactly 50 ImageMetadata objects, each with valid path, site_id, timestamp</description>
+      </testIdea>
+      <testIdea ac="AC2">
+        <description>Test RealDataLoader.load_image(): verify loads valid images as numpy arrays, correct shape and dtype, handles invalid paths gracefully</description>
+      </testIdea>
+      <testIdea ac="AC2">
+        <description>Test metadata extraction: verify site_id parsing ('of_jerusalem', 'carmit', 'gad'), timestamp extraction from filenames, correct distribution (23+17+10=50)</description>
+      </testIdea>
+      <testIdea ac="AC3">
+        <description>Test ground_truth.json schema validation: verify JSON parses correctly, all required fields present, confidence levels valid, 50 image entries</description>
+      </testIdea>
+      <testIdea ac="AC3">
+        <description>Test ground truth completeness: verify no missing annotations, all image_paths match sample_images/ files, site_ids consistent</description>
+      </testIdea>
+      <testIdea ac="AC4">
+        <description>Integration test: RealDataLoader + ground_truth.json → verify data loader can access ground truth, has_shift field matches annotation, all 50 images loadable</description>
+      </testIdea>
+      <testIdea ac="AC4">
+        <description>Edge case tests: empty directory, missing files, corrupted images, invalid JSON schema, duplicate annotations</description>
+      </testIdea>
+    </ideas>
+  </tests>
+</story-context>

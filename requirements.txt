@@ -4,7 +4,12 @@
 # Core dependencies
 numpy>=1.24.0,<2.0.0
 opencv-python>=4.8.0,<5.0.0
+Pillow>=10.0.0,<11.0.0
 
 # Development dependencies
 pytest>=7.0.0
 pytest-cov>=4.0.0
+
+# Performance profiling dependencies (Stage 3 Validation)
+psutil==5.9.5
+memory_profiler==0.61.0

@@ -1,7 +1,19 @@
 {
   "permissions": {
     "allow": [
-      "Bash(touch:*)"
+      "Bash(touch:*)",
+      "Bash(python3:*)",
+      "Bash(python board_printer.py:*)",
+      "Bash(cat:*)",
+      "Bash(source:*)",
+      "Bash(python tools/aruco/board_printer.py:*)",
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(.venv/bin/python:*)",
+      "Bash(.venv/bin/pip install:*)",
+      "Bash(uv pip install:*)",
+      "Bash(/home/thh3/personal/cam-shift-detector/.venv/bin/python:*)",
+      "Bash(awk:*)"
     ],
     "deny": [],
     "ask": []

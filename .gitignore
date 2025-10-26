@@ -25,6 +25,12 @@ venv/
 ENV/
 env/
 
+
+# temporary files folders
+tmp/
+temp/
+
+
 # IDE
 .vscode/
 .idea/
