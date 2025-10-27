@@ -10,7 +10,10 @@ recursive-include sample_images *.jpg *.png
 # Include ground truth annotations
 recursive-include validation/ground_truth *.json
 
-# Include documentation
+# Include project documentation
+recursive-include documentation *.md
+
+# Include BMAD development documents
 recursive-include docs *.md
 
 # Exclude development and build artifacts

@@ -49,9 +49,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Memory usage ≤500 MB
 
 **Release Preparation**
-- Comprehensive integration documentation (`docs/integration-guide.md`)
-- Step-by-step installation guide (`docs/installation.md`)
-- Integration cheat sheet for quick reference (`docs/integration-cheat-sheet.md`)
+- Comprehensive integration documentation (`documentation/integration-guide.md`)
+- Step-by-step installation guide (`documentation/installation.md`)
+- Integration cheat sheet for quick reference (`documentation/integration-cheat-sheet.md`)
 - Stub implementation for parallel integration development
 - Professional package metadata (pyproject.toml with PEP 621 compliance)
 - MIT License for open source distribution
@@ -86,7 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 For full technical specifications, see [docs/tech-spec-epic-MVP-001.md](docs/tech-spec-epic-MVP-001.md).
 
-For integration guidance, see [docs/integration-guide.md](docs/integration-guide.md).
+For integration guidance, see [documentation/integration-guide.md](documentation/integration-guide.md).
 
 ---
 

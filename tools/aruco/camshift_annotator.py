@@ -84,7 +84,9 @@ def make_charuco_board(squares_x, squares_y, square_len_m, marker_len_m, dict_na
     aruco = cv.aruco
     dictionary = aruco.getPredefinedDictionary(getattr(aruco, dict_name))
     board = aruco.CharucoBoard((squares_x, squares_y), square_len_m, marker_len_m, dictionary)
-    return dictionary, board
+    # Create detector for OpenCV 4.7.0+ API
+    detector = aruco.ArucoDetector(dictionary)
+    return dictionary, board, detector
 
 
 def render_board_image(board, px=2480, py=3508):  # A4 at ~300dpi default
@@ -100,15 +102,35 @@ def make_gridboard(markers_x, markers_y, marker_len_m, sep_len_m, dict_name):
     aruco = cv.aruco
     dictionary = aruco.getPredefinedDictionary(getattr(aruco, dict_name))
     board = aruco.GridBoard((markers_x, markers_y), marker_len_m, sep_len_m, dictionary)
-    return dictionary, board
+    # Create detector for OpenCV 4.7.0+ API
+    detector = aruco.ArucoDetector(dictionary)
+    return dictionary, board, detector
 
 
 # ---------- Calibration (ChArUco) ----------
-def run_charuco_calibration(cap, dictionary, charuco_board, out_yaml, max_frames=25):
+def run_charuco_calibration(cap, detector, charuco_board, out_yaml, max_frames=25, save_dir=None):
+    """Run interactive calibration, optionally saving images to disk.
+
+    Args:
+        cap: VideoCapture object or None if loading from images
+        detector: ArucoDetector instance
+        charuco_board: CharucoBoard instance
+        out_yaml: Path to save calibration results
+        max_frames: Maximum frames to collect
+        save_dir: Optional directory to save calibration images
+    """
     print("[Calib] Press 'c' to collect, 'q' to finish.")
     all_corners = []
     all_ids = []
+    all_images = []  # Store grayscale images for calibration
     imsize = None
+    charuco_detector = cv.aruco.CharucoDetector(charuco_board)
+
+    # Setup image saving if requested
+    if save_dir:
+        ensure_dir(save_dir)
+        print(f"[Calib] Saving images to {save_dir}")
+
     while True:
         ok, frame = cap.read()
         if not ok:
@@ -116,11 +138,13 @@ def run_charuco_calibration(cap, dictionary, charuco_board, out_yaml, max_frames
             break
         vis = frame.copy()
         gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-        corners, ids, _ = cv.aruco.detectMarkers(gray, dictionary)
+        # New API: detector.detectMarkers()
+        corners, ids, _ = detector.detectMarkers(gray)
         if len(corners) > 0:
             cv.aruco.drawDetectedMarkers(vis, corners, ids)
-            retval, ch_corners, ch_ids = cv.aruco.interpolateCornersCharuco(corners, ids, gray, charuco_board)
-            if retval and ch_corners is not None and ch_ids is not None:
+            # New API: charuco_detector.detectBoard()
+            ch_corners, ch_ids, _, _ = charuco_detector.detectBoard(gray)
+            if ch_corners is not None and ch_ids is not None:
                 cv.aruco.drawDetectedCornersCharuco(vis, ch_corners, ch_ids)
                 cv.putText(vis, f"Charuco corners: {len(ch_ids)}", (20,40), cv.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
         cv.imshow("Calibration", vis)
@@ -128,7 +152,15 @@ def run_charuco_calibration(cap, dictionary, charuco_board, out_yaml, max_frames
         if k == ord('c') and 'ch_corners' in locals() and ch_corners is not None and ch_ids is not None and len(ch_ids) >= 6:
             all_corners.append(ch_corners)
             all_ids.append(ch_ids)
+            all_images.append(gray.copy())
             imsize = gray.shape[::-1]
+
+            # Save image immediately to prevent data loss
+            if save_dir:
+                img_path = os.path.join(save_dir, f"calib_{len(all_corners):03d}.png")
+                cv.imwrite(img_path, gray)
+                print(f"[Calib] Saved {img_path}")
+
             print(f"[Calib] Collected {len(all_corners)}/{max_frames}")
             if len(all_corners) >= max_frames:
                 print("[Calib] Reached max frames.")
@@ -139,42 +171,185 @@ def run_charuco_calibration(cap, dictionary, charuco_board, out_yaml, max_frames
     if len(all_corners) < 5:
         print("[Calib] Not enough views for calibration.")
         return None
-    ret, K, dist, rvecs, tvecs = cv.aruco.calibrateCameraCharuco(
-        charucoCorners=all_corners,
-        charucoIds=all_ids,
-        board=charuco_board,
-        imageSize=imsize,
-        cameraMatrix=None,
-        distCoeffs=None)
+
+    # OpenCV 4.7.0+ API: Use standard calibrateCamera with ChArUco corners
+    # Get board's 3D object points (corner positions in board coordinate frame)
+    board_obj_points = charuco_board.getChessboardCorners()
+
+    # Prepare data for calibrateCamera
+    object_points = []  # 3D points in board frame
+    image_points = []   # 2D points in image frame
+
+    for corners, ids in zip(all_corners, all_ids):
+        # Match detected corner IDs to board's object points
+        obj_pts = []
+        img_pts = []
+        for i, corner_id in enumerate(ids.flatten()):
+            obj_pts.append(board_obj_points[corner_id])
+            img_pts.append(corners[i])
+        object_points.append(np.array(obj_pts, dtype=np.float32))
+        image_points.append(np.array(img_pts, dtype=np.float32))
+
+    # Run standard camera calibration
+    ret, K, dist, rvecs, tvecs = cv.calibrateCamera(
+        object_points,      # 3D points in board frame
+        image_points,       # 2D points in image frame
+        imsize,             # Image size (width, height)
+        None,               # Initial camera matrix (None = estimate)
+        None)               # Initial distortion coeffs (None = estimate)
+
     if not ret:
         print("[Calib] Calibration failed.")
         return None
+
+    write_yaml_camera(out_yaml, K, dist, imsize)
+    print(f"[Calib] Saved to {out_yaml}")
+    return K, dist, imsize
+
+
+def run_charuco_calibration_from_images(image_dir, detector, charuco_board, out_yaml):
+    """Run calibration using pre-captured images from a directory.
+
+    Args:
+        image_dir: Directory containing calibration images
+        detector: ArucoDetector instance
+        charuco_board: CharucoBoard instance
+        out_yaml: Path to save calibration results
+
+    Returns:
+        Tuple of (K, dist, imsize) or None if calibration failed
+    """
+    import glob
+
+    # Find all image files
+    image_paths = sorted(glob.glob(os.path.join(image_dir, "*.png")) +
+                        glob.glob(os.path.join(image_dir, "*.jpg")) +
+                        glob.glob(os.path.join(image_dir, "*.jpeg")))
+
+    if len(image_paths) == 0:
+        print(f"[Error] No images found in {image_dir}")
+        return None
+
+    print(f"[Calib] Found {len(image_paths)} images in {image_dir}")
+
+    all_corners = []
+    all_ids = []
+    imsize = None
+    charuco_detector = cv.aruco.CharucoDetector(charuco_board)
+
+    for i, img_path in enumerate(image_paths):
+        # Read image
+        img = cv.imread(img_path, cv.IMREAD_GRAYSCALE)
+        if img is None:
+            print(f"[Warn] Failed to read {img_path}, skipping")
+            continue
+
+        imsize = img.shape[::-1]
+
+        # Detect ChArUco board
+        ch_corners, ch_ids, _, _ = charuco_detector.detectBoard(img)
+
+        if ch_corners is not None and ch_ids is not None and len(ch_ids) >= 6:
+            all_corners.append(ch_corners)
+            all_ids.append(ch_ids)
+            print(f"[Calib] Processed {os.path.basename(img_path)}: {len(ch_ids)} corners detected")
+        else:
+            print(f"[Warn] {os.path.basename(img_path)}: insufficient corners detected, skipping")
+
+    if len(all_corners) < 5:
+        print(f"[Error] Not enough valid views for calibration (got {len(all_corners)}, need at least 5)")
+        return None
+
+    print(f"[Calib] Using {len(all_corners)} views for calibration")
+
+    # Prepare data for calibrateCamera
+    board_obj_points = charuco_board.getChessboardCorners()
+    object_points = []
+    image_points = []
+
+    for corners, ids in zip(all_corners, all_ids):
+        obj_pts = []
+        img_pts = []
+        for i, corner_id in enumerate(ids.flatten()):
+            obj_pts.append(board_obj_points[corner_id])
+            img_pts.append(corners[i])
+        object_points.append(np.array(obj_pts, dtype=np.float32))
+        image_points.append(np.array(img_pts, dtype=np.float32))
+
+    # Run calibration
+    ret, K, dist, rvecs, tvecs = cv.calibrateCamera(
+        object_points,
+        image_points,
+        imsize,
+        None,
+        None)
+
+    if not ret:
+        print("[Calib] Calibration failed.")
+        return None
+
     write_yaml_camera(out_yaml, K, dist, imsize)
     print(f"[Calib] Saved to {out_yaml}")
     return K, dist, imsize
 
 
 # ---------- Pose estimation ----------
-def estimate_pose_charuco(frame_gray, dictionary, charuco_board, K, dist):
-    corners, ids, _ = cv.aruco.detectMarkers(frame_gray, dictionary)
-    if len(corners) == 0 or ids is None:
+def estimate_pose_charuco(frame_gray, detector, charuco_board, K, dist):
+    # Create CharucoDetector for board detection
+    charuco_detector = cv.aruco.CharucoDetector(charuco_board)
+
+    # Detect board and estimate pose
+    ch_corners, ch_ids, marker_corners, marker_ids = charuco_detector.detectBoard(frame_gray)
+
+    if ch_corners is None or ch_ids is None or len(ch_ids) < 6:
         return None
-    cv.aruco.refineDetectedMarkers(frame_gray, charuco_board, corners, ids, rejectedCorners=None, cameraMatrix=K, distCoeffs=dist)
-    retval, ch_corners, ch_ids = cv.aruco.interpolateCornersCharuco(corners, ids, frame_gray, charuco_board, cameraMatrix=K, distCoeffs=dist)
-    if not retval or ch_corners is None or ch_ids is None or len(ch_ids) < 6:
-        return None
-    ok, rvec, tvec = cv.aruco.estimatePoseCharucoBoard(ch_corners, ch_ids, charuco_board, K, dist, None, None)
+
+    # Get 3D object points for detected ChArUco corners
+    board_obj_points = charuco_board.getChessboardCorners()
+    obj_pts = []
+    img_pts = []
+    for i, corner_id in enumerate(ch_ids.flatten()):
+        obj_pts.append(board_obj_points[corner_id])
+        img_pts.append(ch_corners[i])
+
+    obj_pts = np.array(obj_pts, dtype=np.float32)
+    img_pts = np.array(img_pts, dtype=np.float32)
+
+    # Use solvePnP for pose estimation
+    ok, rvec, tvec = cv.solvePnP(obj_pts, img_pts, K, dist, flags=cv.SOLVEPNP_ITERATIVE)
     if not ok:
         return None
     return rvec, tvec, len(ch_ids)
 
 
-def estimate_pose_gridboard(frame_gray, dictionary, grid_board, K, dist):
-    corners, ids, _ = cv.aruco.detectMarkers(frame_gray, dictionary)
+def estimate_pose_gridboard(frame_gray, detector, grid_board, K, dist):
+    # New API: detector.detectMarkers()
+    corners, ids, _ = detector.detectMarkers(frame_gray)
     if len(corners) == 0 or ids is None:
         return None
-    cv.aruco.refineDetectedMarkers(frame_gray, grid_board, corners, ids, rejectedCorners=None, cameraMatrix=K, distCoeffs=dist)
-    ok, rvec, tvec = cv.aruco.estimatePoseBoard(corners, ids, grid_board, K, dist, None, None)
+
+    # Get 3D object points for detected markers
+    obj_points = grid_board.getObjPoints()
+
+    # Match detected marker IDs to board's object points
+    obj_pts = []
+    img_pts = []
+    for i, marker_id in enumerate(ids.flatten()):
+        # Each marker has 4 corners
+        if marker_id < len(obj_points) // 4:
+            marker_obj_pts = obj_points[marker_id * 4:(marker_id + 1) * 4]
+            for j in range(4):
+                obj_pts.append(marker_obj_pts[j])
+                img_pts.append(corners[i][0][j])
+
+    if len(obj_pts) < 4:
+        return None
+
+    obj_pts = np.array(obj_pts, dtype=np.float32)
+    img_pts = np.array(img_pts, dtype=np.float32)
+
+    # Use solvePnP for pose estimation
+    ok, rvec, tvec = cv.solvePnP(obj_pts, img_pts, K, dist, flags=cv.SOLVEPNP_ITERATIVE)
     if not ok:
         return None
     return rvec, tvec, len(ids)
@@ -203,6 +378,10 @@ def main():
     p.add_argument("--frame-ext", type=str, default="jpg")
     p.add_argument("--draw", action="store_true", help="Show live window")
     p.add_argument("--board-png", action="store_true", help="Export board PNG to out/")
+    # Calibration options
+    p.add_argument("--save-calib-images", action="store_true", help="Save calibration images as they are captured")
+    p.add_argument("--calib-images-dir", type=str, help="Directory to save/load calibration images (default: out/calib_images)")
+    p.add_argument("--load-calib-images", action="store_true", help="Load calibration images from directory instead of camera")
     args = p.parse_args()
 
     if args.max_rate > 20.0:
@@ -214,45 +393,71 @@ def main():
     if args.save_frames:
         ensure_dir(frames_dir)
 
+    # Setup calibration images directory
+    calib_images_dir = args.calib_images_dir if args.calib_images_dir else os.path.join(args.out, "calib_images")
+    if args.save_calib_images or args.load_calib_images:
+        ensure_dir(calib_images_dir)
+
     # Board setup
     if args.mode == "charuco":
-        dictionary, board = make_charuco_board(args.charuco_squares_x, args.charuco_squares_y, args.square_m, args.marker_m, args.dict)
+        dictionary, board, detector = make_charuco_board(args.charuco_squares_x, args.charuco_squares_y, args.square_m, args.marker_m, args.dict)
         if args.board_png:
             img = render_board_image(board)
             save_board_png(img, os.path.join(args.out, "charuco_board.png"))
             print(f"[Info] Saved ChArUco board to {os.path.join(args.out,'charuco_board.png')}")
     else:
-        dictionary, board = make_gridboard(args.grid_markers_x, args.grid_markers_y, args.marker_m, args.grid_sep_m, args.dict)
+        dictionary, board, detector = make_gridboard(args.grid_markers_x, args.grid_markers_y, args.marker_m, args.grid_sep_m, args.dict)
         if args.board_png:
             canvas = 2000
             board_img = board.generateImage((canvas, canvas))
             save_board_png(board_img, os.path.join(args.out, "grid_board.png"))
             print(f"[Info] Saved GridBoard to {os.path.join(args.out,'grid_board.png')}")
 
-    # Video source
-    src = int(args.source) if args.source.isdigit() else args.source
-    cap = cv.VideoCapture(src)
-    if not cap.isOpened():
-        print("[Error] Cannot open source.")
-        sys.exit(1)
+    # Video source (only needed if not loading calibration from images)
+    cap = None
+    if not args.load_calib_images:
+        src = int(args.source) if args.source.isdigit() else args.source
+        cap = cv.VideoCapture(src)
+        if not cap.isOpened():
+            print("[Error] Cannot open source.")
+            sys.exit(1)
 
     # Calibration load or run
     calib_loaded = read_yaml_camera(args.calib)
+
     if calib_loaded is None and args.mode == "charuco":
-        print("[Info] Calibration file not found. Starting ChArUco calibration.")
-        calib_loaded = run_charuco_calibration(cap, dictionary, board, args.calib, max_frames=25)
-        if calib_loaded is None:
-            print("[Error] Calibration failed or aborted.")
-            sys.exit(2)
-        # Re-init stream after window usage
-        cap.release()
-        cap = cv.VideoCapture(src)
-        if not cap.isOpened():
-            print("[Error] Cannot reopen source after calibration.")
-            sys.exit(3)
+        if args.load_calib_images:
+            # Load calibration from pre-captured images
+            print(f"[Info] Loading calibration images from {calib_images_dir}")
+            calib_loaded = run_charuco_calibration_from_images(calib_images_dir, detector, board, args.calib)
+            if calib_loaded is None:
+                print("[Error] Calibration from images failed.")
+                sys.exit(2)
+        else:
+            # Interactive calibration from camera
+            print("[Info] Calibration file not found. Starting ChArUco calibration.")
+            save_dir = calib_images_dir if args.save_calib_images else None
+            calib_loaded = run_charuco_calibration(cap, detector, board, args.calib, max_frames=25, save_dir=save_dir)
+            if calib_loaded is None:
+                print("[Error] Calibration failed or aborted.")
+                sys.exit(2)
+            # Re-init stream after window usage
+            cap.release()
+            cap = cv.VideoCapture(src)
+            if not cap.isOpened():
+                print("[Error] Cannot reopen source after calibration.")
+                sys.exit(3)
     elif calib_loaded is None and args.mode == "gridboard":
         print("[Error] GridBoard mode requires a camera YAML. Provide --calib.")
         sys.exit(4)
+
+    # Ensure we have a camera open for the main loop
+    if cap is None:
+        src = int(args.source) if args.source.isdigit() else args.source
+        cap = cv.VideoCapture(src)
+        if not cap.isOpened():
+            print("[Error] Cannot open source for pose tracking.")
+            sys.exit(5)
 
     K, dist, _ = calib_loaded
 
@@ -288,8 +493,8 @@ def main():
             gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
 
             # Pose
-            est = (estimate_pose_charuco(gray, dictionary, board, K, dist) if args.mode=="charuco"
-                   else estimate_pose_gridboard(gray, dictionary, board, K, dist))
+            est = (estimate_pose_charuco(gray, detector, board, K, dist) if args.mode=="charuco"
+                   else estimate_pose_gridboard(gray, detector, board, K, dist))
             detected = est is not None
             if detected:
                 rvec, tvec, n_inliers = est
@@ -322,7 +527,7 @@ def main():
 
                 # draw
                 if args.draw or args.save_frames:
-                    cv.aruco.drawAxis(frame, K, dist, rvec, tvec, 0.05)
+                    cv.drawFrameAxes(frame, K, dist, rvec, tvec, 0.05, 3)
                     cv.putText(frame, f"yaw(deg)={yaw:.2f}", (10,30), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,0), 2)
             else:
                 rvec=tvec=None

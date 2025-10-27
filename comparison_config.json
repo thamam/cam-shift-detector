@@ -1,0 +1,24 @@
+{
+  "charuco_board": {
+    "squares_x": 7,
+    "squares_y": 5,
+    "square_len_m": 0.035,
+    "marker_len_m": 0.026,
+    "dict_name": "DICT_4X4_50"
+  },
+  "comparison_settings": {
+    "threshold_percent": 0.03,
+    "default_z_distance_m": 1.15
+  },
+  "display_settings": {
+    "window_width": 640,
+    "window_height": 480,
+    "show_axes": true,
+    "show_features": true
+  },
+  "logging_settings": {
+    "output_dir": "comparison_results",
+    "log_format": "json",
+    "save_frames": false
+  }
+}

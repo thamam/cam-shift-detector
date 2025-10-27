@@ -6,11 +6,35 @@ Computer vision system for detecting camera movement in time-series imagery usin
 
 Development in progress - Stage 3 validation framework complete.
 
+**Ground Truth Validation Complete**: Manual annotation of 50 images reveals detector achieves 66% accuracy with 100% recall (perfect shift detection). See [documentation/ground-truth-annotation-results.md](documentation/ground-truth-annotation-results.md).
+
 **Recent Updates:**
 - ✅ Stage 1: Validation dataset and ground truth generation
 - ✅ Stage 2: Test harness with performance profiling
 - ✅ Stage 3: Automated validation runner with comprehensive reporting
 - ✅ Integration documentation and stub implementation
+- ✅ Ground truth annotation tool with corrected validation results
+
+## Tools
+
+### Ground Truth Annotation Tool
+
+Interactive tool for manually verifying camera shifts in image pairs with per-site baselines and shift magnitude levels.
+
+```bash
+.venv/bin/python tools/annotation/ground_truth_annotator.py
+```
+
+**Features**:
+- Per-site baselines (not single global baseline)
+- Shift magnitude levels: Aligned / Small (<2%) / Medium (2-4%) / Large (>4%) / Inconclusive
+- Alpha blending for visual verification
+- Auto-save and resume capability
+
+**Documentation**:
+- Tool guide: [tools/annotation/README.md](tools/annotation/README.md)
+- Validation results: [documentation/ground-truth-annotation-results.md](documentation/ground-truth-annotation-results.md)
+- Corrected summary: [claudedocs/validation-corrected-summary.md](claudedocs/validation-corrected-summary.md)
 
 ## Integration
 
@@ -30,9 +54,9 @@ result = detector.process_frame(current_frame)
 
 ### Documentation
 
-- **Integration Guide:** `docs/integration-guide.md` - Comprehensive integration documentation
-- **Installation Guide:** `docs/installation.md` - Step-by-step installation instructions
-- **Integration Cheat Sheet:** `docs/integration-cheat-sheet.md` - Quick reference for meetings
+- **Integration Guide:** `documentation/integration-guide.md` - Comprehensive integration documentation
+- **Installation Guide:** `documentation/installation.md` - Step-by-step installation instructions
+- **Integration Cheat Sheet:** `documentation/integration-cheat-sheet.md` - Quick reference for meetings
 
 ### Stub Implementation (Parallel Development)
 

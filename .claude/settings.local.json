@@ -13,7 +13,16 @@
       "Bash(.venv/bin/pip install:*)",
       "Bash(uv pip install:*)",
       "Bash(/home/thh3/personal/cam-shift-detector/.venv/bin/python:*)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Read(//home/thh3/**)",
+      "Read(//dev/**)",
+      "mcp__serena__get_symbols_overview",
+      "mcp__serena__activate_project",
+      "Bash(tree:*)",
+      "Bash(for f in validation/analyze_*.py validation/investigate_*.py validation/diagnose_*.py validation/regenerate_*.py)",
+      "Bash(do if [ -f \"$f\" ])",
+      "Bash(chmod:*)",
+      "Bash(PYTHONPATH=/home/thh3/personal/cam-shift-detector .venv/bin/python:*)"
     ],
     "deny": [],
     "ask": []
