@@ -22,12 +22,25 @@ wheels/
 
 # Virtual environments
 venv/
+.venv/
 ENV/
 env/
 
-# IDE
+
+# temporary files folders
+tmp/
+temp/
+
+# Testing and coverage
+htmlcov/
+.coverage
+.pytest_cache/
+
+
+# IDE and MCP servers
 .vscode/
 .idea/
+.serena/
 *.swp
 *.swo
 
@@ -37,11 +50,42 @@ validation/stage2_data/
 validation/stage2_results.json
 validation/stage2_results_report.txt
 
+# Validation results, data, and archives
+validation/results/
+validation/archive/
+validation/data/
+
 # Sample images (download/generate separately)
 sample_images/
 
 # Backup directories
 validation/stage2_data/*_backup/
+
+# ArUco and annotation tool outputs
+run_out/
+camera.yaml
+tools/annotation/
+*_charuco_*.png
+*_grid_*.png
+charuco_*.png
+grid_*.png
+
+# Comparison tool test outputs
+online_test_results_*/
+offline_test_results_*/
+session_*/
+*_comparison.json
+*_mse_graph.png
+*_worst_matches.txt
+
+# Debug scripts
+debug_*.py
+
+# Config directory (user-specific runtime configs)
+config/
+
+# Claude Code temporary documentation
+claudedocs/
 
 # OS
 .DS_Store

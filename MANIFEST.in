@@ -1,0 +1,29 @@
+# Include essential documentation
+include README.md
+include LICENSE
+include CHANGELOG.md
+include config.json
+
+# Include sample images for validation
+recursive-include sample_images *.jpg *.png
+
+# Include ground truth annotations
+recursive-include validation/ground_truth *.json
+
+# Include project documentation
+recursive-include documentation *.md
+
+# Include BMAD development documents
+recursive-include docs *.md
+
+# Exclude development and build artifacts
+global-exclude __pycache__
+global-exclude *.py[co]
+global-exclude .DS_Store
+global-exclude *.swp
+global-exclude *~
+prune .venv
+prune .git
+prune dist
+prune build
+prune *.egg-info

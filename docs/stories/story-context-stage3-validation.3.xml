@@ -1,0 +1,472 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Story Context XML for Story 3: Integration, Reporting & Quality Assurance
+Epic: Stage 3 Real-World Validation System
+Generated: 2025-10-26
+Agent: SM (Scrum Master - Bob)
+Purpose: Comprehensive implementation guidance for DEV agent
+-->
+
+<story-context id="stage3-validation.3" v="1.0">
+  <metadata>
+    <epicId>stage3-validation</epicId>
+    <storyId>3</storyId>
+    <title>Integration, Reporting &amp; Quality Assurance</title>
+    <status>ContextReadyDraft</status>
+    <generatedDate>2025-10-26</generatedDate>
+    <dependencies>
+      <dependency>story-stage3-validation-1</dependency>
+      <dependency>story-stage3-validation-2</dependency>
+    </dependencies>
+  </metadata>
+
+  <story>
+    <asA>validation engineer and decision-maker</asA>
+    <iWant>an automated validation runner that orchestrates the complete workflow and generates comprehensive reports</iWant>
+    <soThat>we have a one-command validation execution with clear go/no-go recommendations for production deployment</soThat>
+
+    <tasks>
+      <phase id="1" name="Validation Runner Implementation">
+        <task id="1.1">Create validation/run_stage3_validation.py orchestration script</task>
+        <task id="1.2">Implement ValidationRunner class with sequential workflow execution</task>
+        <task id="1.3">Integrate RealDataLoader (Story 1), Stage3TestHarness (Story 2), PerformanceProfiler (Story 2)</task>
+        <task id="1.4">Add command-line interface with argparse</task>
+        <task id="1.5">Implement progress reporting and error handling</task>
+      </phase>
+
+      <phase id="2" name="JSON Report Generation">
+        <task id="2.1">Create validation/report_generator.py module</task>
+        <task id="2.2">Implement JSONReportGenerator class</task>
+        <task id="2.3">Generate validation_report.json with metrics, performance, site breakdown</task>
+        <task id="2.4">Add timestamp, version tracking, and metadata</task>
+        <task id="2.5">Implement JSON schema validation</task>
+      </phase>
+
+      <phase id="3" name="Markdown Report Generation">
+        <task id="3.1">Implement MarkdownReportGenerator class</task>
+        <task id="3.2">Generate validation_report.md with executive summary</task>
+        <task id="3.3">Add metrics visualization (confusion matrix, site breakdown tables)</task>
+        <task id="3.4">Include performance benchmarks and failure analysis</task>
+        <task id="3.5">Add go/no-go recommendation section</task>
+      </phase>
+
+      <phase id="4" name="Go/No-Go Decision Logic">
+        <task id="4.1">Implement GoNoGoDecisionMaker class</task>
+        <task id="4.2">Define production readiness gate criteria</task>
+        <task id="4.3">Evaluate accuracy threshold (≥95%)</task>
+        <task id="4.4">Evaluate performance targets (FPS ≥0.0167, Memory ≤500MB)</task>
+        <task id="4.5">Generate recommendation with rationale</task>
+      </phase>
+
+      <phase id="5" name="Framework Testing">
+        <task id="5.1">Create tests/validation/test_validation_runner.py</task>
+        <task id="5.2">Create tests/validation/test_report_generator.py</task>
+        <task id="5.3">Test JSON report structure and content</task>
+        <task id="5.4">Test markdown report formatting</task>
+        <task id="5.5">Test go/no-go decision logic (pass/fail scenarios)</task>
+        <task id="5.6">Run integration test: Full validation workflow</task>
+      </phase>
+
+      <phase id="6" name="Documentation &amp; Final Review">
+        <task id="6.1">Update README.md with Stage 3 validation instructions</task>
+        <task id="6.2">Document validation runner CLI usage</task>
+        <task id="6.3">Add example validation reports</task>
+        <task id="6.4">Verify all AC1-AC5 acceptance criteria</task>
+        <task id="6.5">Final integration test on production-equivalent hardware</task>
+      </phase>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC1" name="Validation Runner Orchestration">
+      <requirement>ValidationRunner class successfully orchestrates complete workflow</requirement>
+      <requirement>Sequential execution: Load data → Run harness → Profile → Generate reports</requirement>
+      <requirement>Command-line interface: python validation/run_stage3_validation.py</requirement>
+      <requirement>Progress reporting during execution (steps, percentages, time estimates)</requirement>
+      <requirement>Graceful error handling with detailed logging</requirement>
+      <requirement>Exit codes: 0 (success), 1 (validation errors), 2 (system errors)</requirement>
+    </criterion>
+
+    <criterion id="AC2" name="JSON Report Generation">
+      <requirement>validation_report.json created with complete validation results</requirement>
+      <requirement>Structure includes: validation_date, total_images, metrics, performance, site_breakdown, go_no_go</requirement>
+      <requirement>Metrics section: accuracy, false_positive_rate, false_negative_rate, confusion_matrix</requirement>
+      <requirement>Performance section: mean_fps, peak_memory_mb, mean_cpu_percent</requirement>
+      <requirement>Site breakdown: per-site accuracy for OF_JERUSALEM, CARMIT, GAD</requirement>
+      <requirement>Valid JSON structure (parseable, schema-compliant)</requirement>
+    </criterion>
+
+    <criterion id="AC3" name="Markdown Report Generation">
+      <requirement>validation_report.md created with human-readable analysis</requirement>
+      <requirement>Executive summary: Key findings in 3-5 bullet points</requirement>
+      <requirement>Metrics visualization: Confusion matrix table, site breakdown table</requirement>
+      <requirement>Performance benchmarks: FPS vs target, memory vs target, CPU usage</requirement>
+      <requirement>Failure analysis: Detailed breakdown of false positives/negatives if any</requirement>
+      <requirement>Go/no-go recommendation: Clear GO or NO-GO with rationale</requirement>
+      <requirement>Professional formatting: Headers, tables, emphasis</requirement>
+    </criterion>
+
+    <criterion id="AC4" name="Go/No-Go Decision Logic">
+      <requirement>GoNoGoDecisionMaker evaluates production readiness</requirement>
+      <requirement>Gate criteria: Accuracy ≥95%, FPS ≥0.0167, Memory ≤500MB</requirement>
+      <requirement>Returns recommendation: "GO" or "NO-GO"</requirement>
+      <requirement>Includes gate_criteria_met: true/false for each criterion</requirement>
+      <requirement>Provides rationale: Explanation of decision with specific metrics</requirement>
+      <requirement>Conservative approach: Any gate failure → NO-GO recommendation</requirement>
+    </criterion>
+
+    <criterion id="AC5" name="Framework Quality Assurance">
+      <requirement>Unit tests for ValidationRunner orchestration logic</requirement>
+      <requirement>Unit tests for JSONReportGenerator structure validation</requirement>
+      <requirement>Unit tests for MarkdownReportGenerator formatting</requirement>
+      <requirement>Unit tests for GoNoGoDecisionMaker (pass/fail scenarios)</requirement>
+      <requirement>Integration test: Full end-to-end validation workflow</requirement>
+      <requirement>All tests passing with ≥95% code coverage</requirement>
+      <requirement>No regression in existing Story 1 &amp; Story 2 functionality</requirement>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec.md</path>
+        <title>Technical Specification</title>
+        <section>Validation Report Format (lines 260-300)</section>
+        <snippet>
+### 5. Validation Report Format
+
+**JSON Report** (`validation_report.json`):
+{
+  "validation_date": "2025-10-25",
+  "total_images": 50,
+  "metrics": {
+    "accuracy": 0.96,
+    "false_positive_rate": 0.04,
+    "false_negative_rate": 0.00
+  },
+  "performance": {
+    "mean_fps": 0.025,
+    "peak_memory_mb": 420,
+    "mean_cpu_percent": 45.2
+  },
+  "site_breakdown": {...},
+  "go_no_go": {
+    "recommendation": "GO|NO-GO",
+    "gate_criteria_met": true|false,
+    "rationale": "Explanation"
+  }
+}
+
+**Markdown Report** (`validation_report.md`):
+- Executive summary
+- Metrics visualization
+- Performance benchmarks
+- Failure analysis
+- Go/no-go recommendation
+        </snippet>
+      </doc>
+
+      <doc>
+        <path>docs/tech-spec.md</path>
+        <title>Technical Specification</title>
+        <section>Implementation Guide - Phase 5 (lines 401-416)</section>
+        <snippet>
+### Phase 5: Validation Runner + Reports
+**Duration:** 1 day
+
+**Tasks:**
+1. Implement `run_stage3_validation.py` orchestration
+   - Sequential workflow execution
+   - Error handling
+   - Progress reporting
+2. JSON report generation
+3. Markdown report generation
+4. Go/no-go decision logic
+
+**Testing:** Report structure validation, go/no-go logic testing
+        </snippet>
+      </doc>
+
+      <doc>
+        <path>docs/stories/story-stage3-validation-3.md</path>
+        <title>Story 3 Definition</title>
+        <section>Full Story</section>
+        <snippet>Complete story definition with AC1-AC5, 6 implementation phases, expected file structure, and integration requirements</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>validation/real_data_loader.py</path>
+        <description>Story 1 output - Loads 50 validation images from DAF sites with ground truth annotations</description>
+        <interface>RealDataLoader.load_dataset() -> List[ImageMetadata]</interface>
+        <interface>RealDataLoader.load_image(image_path: Path) -> np.ndarray</interface>
+      </artifact>
+
+      <artifact>
+        <path>validation/stage3_test_harness.py</path>
+        <description>Story 2 output - Executes detector on all images, compares with ground truth, calculates metrics</description>
+        <interface>Stage3TestHarness.run_validation(baseline_image_path: Optional[Path] = None) -> tuple[Metrics, PerformanceMetrics]</interface>
+        <interface>Stage3TestHarness.calculate_metrics(total_time_seconds: float) -> Metrics</interface>
+        <interface>Stage3TestHarness.calculate_site_breakdown() -> Dict[str, Dict]</interface>
+        <interface>Metrics dataclass: total_images, true_positives, true_negatives, false_positives, false_negatives, accuracy, false_positive_rate, false_negative_rate, confusion_matrix, site_breakdown, total_time_seconds, errors_count</interface>
+      </artifact>
+
+      <artifact>
+        <path>validation/performance_profiler.py</path>
+        <description>Story 2 output - Profiles detector execution with FPS, memory, CPU measurements</description>
+        <interface>PerformanceProfiler.profile_detection(detection_func: Callable, *args, **kwargs) -> tuple[result, detection_time]</interface>
+        <interface>PerformanceProfiler.get_metrics() -> PerformanceMetrics</interface>
+        <interface>PerformanceMetrics dataclass: fps, fps_min, fps_max, memory_peak_mb, memory_mean_mb, memory_stddev_mb, cpu_percent_mean, cpu_percent_max, detection_time_mean_ms, detection_time_stddev_ms, total_images, meets_fps_target, meets_memory_target</interface>
+        <interface>Performance targets: FPS_TARGET = 1.0/60.0 (0.0167), MEMORY_TARGET_MB = 500.0</interface>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <dependency>
+        <name>numpy</name>
+        <version>>=1.24.0,&lt;2.0.0</version>
+        <purpose>Array operations, metric calculations</purpose>
+        <status>installed</status>
+      </dependency>
+
+      <dependency>
+        <name>opencv-python</name>
+        <version>>=4.8.0,&lt;5.0.0</version>
+        <purpose>Image loading and processing (via RealDataLoader)</purpose>
+        <status>installed</status>
+      </dependency>
+
+      <dependency>
+        <name>psutil</name>
+        <version>==5.9.5</version>
+        <purpose>Performance profiling (Story 2 dependency)</purpose>
+        <status>installed</status>
+      </dependency>
+
+      <dependency>
+        <name>memory_profiler</name>
+        <version>==0.61.0</version>
+        <purpose>Memory usage profiling (Story 2 dependency)</purpose>
+        <status>installed</status>
+      </dependency>
+
+      <dependency>
+        <name>pytest</name>
+        <version>>=7.0.0</version>
+        <purpose>Testing framework</purpose>
+        <status>installed</status>
+      </dependency>
+
+      <dependency>
+        <name>pytest-cov</name>
+        <version>>=4.0.0</version>
+        <purpose>Test coverage measurement</purpose>
+        <status>installed</status>
+      </dependency>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="1" type="integration">
+      <description>Must reuse existing Story 1 and Story 2 outputs without modifications</description>
+      <rationale>Pure additive implementation - no changes to validated components</rationale>
+    </constraint>
+
+    <constraint id="2" type="orchestration">
+      <description>ValidationRunner must execute workflow sequentially: Load → Harness → Profile → Reports</description>
+      <rationale>Each phase depends on successful completion of previous phase</rationale>
+    </constraint>
+
+    <constraint id="3" type="error-handling">
+      <description>Graceful degradation on errors - log failures but generate reports with available data</description>
+      <rationale>Partial results better than complete failure for validation analysis</rationale>
+    </constraint>
+
+    <constraint id="4" type="performance">
+      <description>Report generation must complete within 5 seconds after validation execution</description>
+      <rationale>Fast feedback loop for validation engineers</rationale>
+    </constraint>
+
+    <constraint id="5" type="output">
+      <description>Reports must be saved to validation/results/ directory</description>
+      <rationale>Organized storage for validation artifacts, matches project structure</rationale>
+    </constraint>
+
+    <constraint id="6" type="compatibility">
+      <description>CLI must work on Linux production-equivalent hardware (500 MB RAM constraint)</description>
+      <rationale>Target deployment environment compatibility</rationale>
+    </constraint>
+
+    <constraint id="7" type="go-no-go">
+      <description>Conservative decision logic - ANY gate failure results in NO-GO recommendation</description>
+      <rationale>Production safety - false positive (unnecessary block) preferable to false negative (bad deployment)</rationale>
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface type="input" name="Story 1 Data Loader">
+      <description>RealDataLoader provides 50 validation images with ground truth</description>
+      <method>load_dataset() -> List[ImageMetadata]</method>
+      <method>load_image(image_path: Path) -> np.ndarray</method>
+      <dataStructure>ImageMetadata: image_path, site_id, capture_date, has_shift</dataStructure>
+    </interface>
+
+    <interface type="input" name="Story 2 Test Harness">
+      <description>Stage3TestHarness executes validation and calculates metrics</description>
+      <method>run_validation(baseline_image_path: Optional[Path]) -> tuple[Metrics, PerformanceMetrics]</method>
+      <dataStructure>Metrics: accuracy, FPR, FNR, confusion_matrix, site_breakdown, etc.</dataStructure>
+    </interface>
+
+    <interface type="input" name="Story 2 Performance Profiler">
+      <description>PerformanceProfiler provides system resource measurements</description>
+      <method>get_metrics() -> PerformanceMetrics</method>
+      <dataStructure>PerformanceMetrics: fps, memory, CPU, meets_targets flags</dataStructure>
+    </interface>
+
+    <interface type="output" name="JSON Report">
+      <description>Machine-readable validation report in JSON format</description>
+      <file>validation/results/validation_report.json</file>
+      <schema>
+        {
+          "validation_date": "ISO-8601 timestamp",
+          "total_images": integer,
+          "metrics": {Metrics dataclass fields},
+          "performance": {PerformanceMetrics dataclass fields},
+          "site_breakdown": {per-site accuracy dict},
+          "go_no_go": {
+            "recommendation": "GO|NO-GO",
+            "gate_criteria_met": boolean,
+            "rationale": string
+          }
+        }
+      </schema>
+    </interface>
+
+    <interface type="output" name="Markdown Report">
+      <description>Human-readable validation report in Markdown format</description>
+      <file>validation/results/validation_report.md</file>
+      <sections>
+        - Executive Summary
+        - Validation Metrics (confusion matrix table)
+        - Performance Benchmarks (vs targets)
+        - Per-Site Breakdown
+        - Failure Analysis (if applicable)
+        - Go/No-Go Recommendation
+      </sections>
+    </interface>
+
+    <interface type="cli" name="Validation Runner CLI">
+      <description>Command-line interface for executing validation</description>
+      <usage>python validation/run_stage3_validation.py [--baseline PATH] [--output-dir DIR]</usage>
+      <arguments>
+        --baseline: Optional baseline image path (default: first image)
+        --output-dir: Output directory for reports (default: validation/results/)
+      </arguments>
+      <exitCodes>
+        0: Validation successful, reports generated
+        1: Validation errors detected
+        2: System errors (file not found, permission denied, etc.)
+      </exitCodes>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <testFile>
+      <path>tests/validation/test_validation_runner.py</path>
+      <description>Unit tests for ValidationRunner orchestration</description>
+      <testCases>
+        <testCase>test_validation_runner_initialization</testCase>
+        <testCase>test_sequential_workflow_execution</testCase>
+        <testCase>test_progress_reporting</testCase>
+        <testCase>test_error_handling_graceful_degradation</testCase>
+        <testCase>test_cli_argument_parsing</testCase>
+        <testCase>test_exit_codes</testCase>
+      </testCases>
+    </testFile>
+
+    <testFile>
+      <path>tests/validation/test_report_generator.py</path>
+      <description>Unit tests for JSON and Markdown report generation</description>
+      <testCases>
+        <testCase>test_json_report_structure</testCase>
+        <testCase>test_json_report_content_accuracy</testCase>
+        <testCase>test_json_schema_validation</testCase>
+        <testCase>test_markdown_report_formatting</testCase>
+        <testCase>test_markdown_executive_summary</testCase>
+        <testCase>test_markdown_confusion_matrix_table</testCase>
+        <testCase>test_markdown_site_breakdown_table</testCase>
+      </testCases>
+    </testFile>
+
+    <testFile>
+      <path>tests/validation/test_go_no_go.py</path>
+      <description>Unit tests for GoNoGoDecisionMaker logic</description>
+      <testCases>
+        <testCase>test_go_recommendation_all_gates_pass</testCase>
+        <testCase>test_no_go_accuracy_below_threshold</testCase>
+        <testCase>test_no_go_fps_below_target</testCase>
+        <testCase>test_no_go_memory_above_target</testCase>
+        <testCase>test_rationale_generation</testCase>
+        <testCase>test_conservative_decision_logic</testCase>
+      </testCases>
+    </testFile>
+
+    <testFile>
+      <path>tests/validation/test_integration_story3.py</path>
+      <description>Integration test for complete Story 3 workflow</description>
+      <testCases>
+        <testCase>test_full_validation_workflow_end_to_end</testCase>
+        <testCase>test_reports_generated_successfully</testCase>
+        <testCase>test_report_content_consistency</testCase>
+        <testCase>test_performance_within_constraints</testCase>
+      </testCases>
+    </testFile>
+
+    <coverageTarget>
+      <target>≥95% code coverage for all new modules</target>
+      <modules>
+        <module>validation/run_stage3_validation.py</module>
+        <module>validation/report_generator.py</module>
+      </modules>
+    </coverageTarget>
+  </tests>
+
+  <devNotes>
+    <note priority="high">
+      **Integration Point**: ValidationRunner must import and use Story 1 RealDataLoader and Story 2 Stage3TestHarness exactly as-is. No modifications to existing code.
+    </note>
+
+    <note priority="high">
+      **Report Location**: All reports saved to validation/results/ directory (create if not exists). Consistent with project structure established in Stories 1 &amp; 2.
+    </note>
+
+    <note priority="medium">
+      **Go/No-Go Criteria**: Conservative approach mandated. If ANY gate fails (accuracy &lt;95%, FPS &lt;0.0167, memory &gt;500MB), recommendation is NO-GO. Rationale must explain which gate(s) failed.
+    </note>
+
+    <note priority="medium">
+      **Error Handling**: Graceful degradation pattern - log errors but continue execution. Generate reports with available data even if some components fail (e.g., profiler fails but harness succeeds).
+    </note>
+
+    <note priority="low">
+      **Markdown Formatting**: Use GitHub-flavored markdown. Tables for confusion matrix and site breakdown. Bold for recommendations. Code blocks for technical details.
+    </note>
+
+    <note priority="low">
+      **Performance**: Report generation should be fast (&lt;5 seconds). Most time spent in validation execution (Story 2 harness ~50 minutes for 50 images).
+    </note>
+  </devNotes>
+
+  <estimatedEffort>
+    <storyPoints>3</storyPoints>
+    <duration>2 days</duration>
+    <breakdown>
+      <phase>Validation Runner Implementation: 0.5 day</phase>
+      <phase>Report Generation (JSON + Markdown): 0.5 day</phase>
+      <phase>Go/No-Go Logic: 0.25 day</phase>
+      <phase>Testing &amp; Integration: 0.5 day</phase>
+      <phase>Documentation &amp; Review: 0.25 day</phase>
+    </breakdown>
+  </estimatedEffort>
+</story-context>

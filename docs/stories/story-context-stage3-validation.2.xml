@@ -1,0 +1,157 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>stage3-validation</epicId>
+    <storyId>2</storyId>
+    <title>Test Harness & Performance Profiling</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-25</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/story-stage3-validation-2.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>validation engineer</asA>
+    <iWant>an automated test harness that executes the detector against real imagery and profiles system performance</iWant>
+    <soThat>we can systematically measure detection accuracy and production-readiness metrics on target hardware</soThat>
+    <tasks>
+      <phase id="1" name="Test Harness Core Implementation">
+        - Create validation/stage3_test_harness.py
+        - Implement DetectionResult dataclass (image_path, ground_truth, predicted, is_correct, detection_time_ms)
+        - Implement Stage3TestHarness class: __init__(), run_validation(), _execute_single_detection(), _compare_with_ground_truth()
+        - Integration with CameraMovementDetector API from src/
+        - Progress reporting logic
+      </phase>
+      <phase id="2" name="Metrics Calculation">
+        - Implement calculate_metrics() method (TP, TN, FP, FN, accuracy, FPR, FNR, confusion matrix)
+        - Implement calculate_site_breakdown() method (per-site accuracy and counts)
+        - Create Metrics dataclass for structured results
+      </phase>
+      <phase id="3" name="Performance Profiler Implementation">
+        - Create validation/performance_profiler.py
+        - Implement PerformanceProfiler class: measure_fps(), measure_memory(), measure_cpu(), profile_detection()
+        - Integration with psutil for system metrics
+        - Create PerformanceMetrics dataclass
+      </phase>
+      <phase id="4" name="Performance Integration">
+        - Integrate PerformanceProfiler with Stage3TestHarness
+        - Capture and aggregate performance metrics across 50 images
+        - Verify measurements meet targets (FPS ≥1/60 Hz, Memory ≤500 MB)
+      </phase>
+      <phase id="5" name="Test Harness Testing">
+        - Create tests/validation/test_harness.py with unit tests for metrics calculation and confusion matrix
+        - Create tests/validation/test_performance.py with unit tests for FPS, memory profiling
+        - Write integration test: Full harness execution with mock detector
+        - Ensure ≥95% test coverage
+      </phase>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC1" name="Test Harness Execution Logic">
+      - Stage3TestHarness successfully executes detector on all 50 images
+      - Detection results compared against ground truth for each image
+      - Per-image results captured (ground_truth, predicted, is_correct, detection_time)
+      - Graceful error handling without aborting validation
+      - Progress reporting during execution
+    </criterion>
+    <criterion id="AC2" name="Metrics Calculation">
+      - Overall detection accuracy: (TP + TN) / Total
+      - False positive rate: FP / (FP + TN)
+      - False negative rate: FN / (FN + TP)
+      - Confusion matrix generation (TP, TN, FP, FN)
+      - Per-site breakdown for 3 sites (OF_JERUSALEM, CARMIT, GAD)
+    </criterion>
+    <criterion id="AC3" name="Performance Profiler Implemented">
+      - PerformanceProfiler measures FPS (frames per second)
+      - Memory usage profiling (peak and sustained MB)
+      - CPU usage tracking (percentage utilization)
+      - Integration with test harness execution
+      - Performance data collected for all 50 images
+      - Meets targets: FPS ≥1/60 Hz, Memory ≤500 MB
+    </criterion>
+    <criterion id="AC4" name="Test Harness Testing">
+      - Unit tests for metrics calculation (100%, 0%, mixed scenarios)
+      - Unit tests for confusion matrix generation
+      - Integration test: Full harness execution with mock detector
+      - Performance profiler accuracy verification
+      - All tests passing with ≥95% coverage
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/tech-spec.md" title="Stage 3 Technical Specification" section="Test Harness Implementation" snippet="Stage3TestHarness class with run_validation() method, detection execution loop, ground truth comparison, and metrics calculation. Includes DetectionResult dataclass structure."/>
+      <doc path="docs/tech-spec.md" title="Stage 3 Technical Specification" section="Performance Profiler Implementation" snippet="PerformanceProfiler class with FPS measurement, memory profiling, CPU tracking. Targets: FPS ≥1/60 Hz, Memory ≤500 MB on Linux production hardware."/>
+      <doc path="docs/tech-spec.md" title="Stage 3 Technical Specification" section="Implementation Guide - Phase 3-4" snippet="2-day test harness implementation schedule followed by 1-day performance profiling integration."/>
+      <doc path="docs/product-brief-cam-shift-detector-2025-10-25.md" title="Product Brief" section="Stage 3 Validation Framework" snippet="Real-world validation on 50 DAF images with accuracy and performance metrics to ensure production readiness."/>
+    </docs>
+    <code>
+      <artifact path="src/camera_movement_detector.py" kind="detector_api" symbol="CameraMovementDetector" lines="19-258" reason="Main detector API that test harness will invoke. Uses process_frame() method to detect camera movement."/>
+      <artifact path="src/camera_movement_detector.py" kind="method" symbol="process_frame" lines="192-258" reason="Core detection method returning status, translation_displacement, confidence, frame_id, timestamp. Test harness must call this for each image."/>
+      <artifact path="validation/real_data_loader.py" kind="data_loader" symbol="RealDataLoader" lines="1-73" reason="Story 1 output - loads 50 real DAF images with metadata and ground truth annotations. Test harness depends on this."/>
+      <artifact path="validation/__init__.py" kind="package_config" symbol="VALIDATION_ROOT" lines="1-30" reason="Validation package configuration with directory path constants (GROUND_TRUTH_DIR, RESULTS_DIR, SAMPLE_IMAGES_DIR)."/>
+      <artifact path="validation/ground_truth/ground_truth.json" kind="ground_truth" symbol="annotations" lines="N/A" reason="50 image annotations with has_camera_shift boolean. Test harness compares detector predictions against these."/>
+    </code>
+    <dependencies>
+      <python>
+        <existing>
+          <package name="numpy" version=">=1.24.0,&lt;2.0.0"/>
+          <package name="opencv-python" version=">=4.8.0,&lt;5.0.0"/>
+          <package name="pytest" version=">=7.0.0"/>
+          <package name="pytest-cov" version=">=4.0.0"/>
+        </existing>
+        <new_required>
+          <package name="psutil" version="==5.9.5" purpose="CPU and memory monitoring for performance profiling"/>
+          <package name="memory_profiler" version="==0.61.0" purpose="Detailed memory profiling"/>
+        </new_required>
+      </python>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="1" type="integration">Must reuse existing CameraMovementDetector API from Epic 1 without any modifications to src/ codebase</constraint>
+    <constraint id="2" type="performance">Performance profiling must run on Linux production-equivalent hardware with 500 MB RAM limit</constraint>
+    <constraint id="3" type="execution">Sequential processing model: 50 images × ~60 seconds/image = ~50 minutes total execution time</constraint>
+    <constraint id="4" type="error_handling">Test harness must handle detection errors gracefully (log failures but continue validation)</constraint>
+    <constraint id="5" type="metrics">Metrics calculation must follow industry standards for TP, TN, FP, FN definitions</constraint>
+    <constraint id="6" type="precision">Accuracy metrics reported with 4 decimal places precision</constraint>
+    <constraint id="7" type="dependencies">Depends on Story 1 outputs: RealDataLoader and ground_truth.json must be available</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="CameraMovementDetector.process_frame" kind="method" signature="def process_frame(image_array: np.ndarray, frame_id: Optional[str] = None) -&gt; Dict" path="src/camera_movement_detector.py:192-258">
+      Returns: {"status": "VALID"|"INVALID", "translation_displacement": float, "confidence": float, "frame_id": str, "timestamp": str}
+      Requires: set_baseline() must be called first with baseline image
+      Input: NumPy array (H × W × 3, uint8, BGR format)
+    </interface>
+    <interface name="RealDataLoader.load_dataset" kind="method" signature="def load_dataset() -&gt; List[ImageMetadata]" path="validation/real_data_loader.py">
+      Returns: List of ImageMetadata objects with image_path, site_id, timestamp, has_shift fields
+      Purpose: Load all 50 images with ground truth annotations
+    </interface>
+    <interface name="RealDataLoader.load_image" kind="method" signature="def load_image(path: Path) -&gt; np.ndarray" path="validation/real_data_loader.py">
+      Returns: NumPy array in RGB format (H × W × 3, uint8)
+      Note: Returns RGB, but detector expects BGR - conversion required
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Testing framework: pytest with pytest-cov for coverage measurement. Target: ≥95% test coverage. Test organization: tests/validation/ directory with test_harness.py and test_performance.py modules. Unit tests for all calculation methods, integration tests for full harness execution.</standards>
+    <locations>
+      - tests/validation/test_harness.py (metrics calculation, confusion matrix, site breakdown)
+      - tests/validation/test_performance.py (FPS measurement, memory profiling, CPU tracking)
+      - tests/validation/ (integration tests with mock detector)
+    </locations>
+    <ideas>
+      <idea ac="AC1">Mock CameraMovementDetector to test harness execution without real detector</idea>
+      <idea ac="AC1">Test graceful error handling when detector raises exceptions</idea>
+      <idea ac="AC2">Test metrics calculation with all correct predictions (100% accuracy scenario)</idea>
+      <idea ac="AC2">Test metrics calculation with all wrong predictions (0% accuracy scenario)</idea>
+      <idea ac="AC2">Test metrics calculation with mixed results (realistic accuracy)</idea>
+      <idea ac="AC2">Verify confusion matrix calculations: TP=25, TN=20, FP=3, FN=2 example</idea>
+      <idea ac="AC2">Test per-site breakdown with known distribution (OF_JERUSALEM: 23, CARMIT: 17, GAD: 10)</idea>
+      <idea ac="AC3">Test FPS measurement accuracy by comparing against time.time() baseline</idea>
+      <idea ac="AC3">Test memory profiling captures peak memory correctly</idea>
+      <idea ac="AC4">Integration test: Full harness run with mock detector verifies end-to-end flow</idea>
+    </ideas>
+  </tests>
+</story-context>
