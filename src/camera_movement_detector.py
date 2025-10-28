@@ -10,10 +10,10 @@ import json
 import numpy as np
 from typing import Dict, List, Optional
 
-from .static_region_manager import StaticRegionManager
-from .feature_extractor import FeatureExtractor
-from .movement_detector import MovementDetector
-from .result_manager import ResultManager
+from static_region_manager import StaticRegionManager
+from feature_extractor import FeatureExtractor
+from movement_detector import MovementDetector
+from result_manager import ResultManager
 
 
 class CameraMovementDetector:
