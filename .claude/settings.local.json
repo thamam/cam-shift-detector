@@ -22,7 +22,9 @@
       "Bash(for f in validation/analyze_*.py validation/investigate_*.py validation/diagnose_*.py validation/regenerate_*.py)",
       "Bash(do if [ -f \"$f\" ])",
       "Bash(chmod:*)",
-      "Bash(PYTHONPATH=/home/thh3/personal/cam-shift-detector .venv/bin/python:*)"
+      "Bash(PYTHONPATH=/home/thh3/personal/cam-shift-detector .venv/bin/python:*)",
+      "Bash(claude mcp --help:*)",
+      "Bash(claude mcp list:*)"
     ],
     "deny": [],
     "ask": []

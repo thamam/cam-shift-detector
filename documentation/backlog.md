@@ -18,6 +18,22 @@
 - [ ] Add confidence scoring for detection results
 - [ ] Handle edge cases (occlusions, extreme weather)
 
+### Calibration System
+- [ ] Auto calibration system design and implementation
+  - Define calibration triggers (initial setup, quality degradation, user-initiated)
+  - Establish calibration procedure and workflow
+  - Implement calibration success criteria and validation metrics
+  - Add user notification system for calibration status and outcomes
+  - Create calibration quality assessment and reporting
+
+### Baseline Management & Drift Handling
+- [ ] Adaptive baseline update strategy
+  - Design mechanism to update baseline image for improved tracking accuracy
+  - Implement safeguards against drift accumulation from slow camera motion
+  - Balance between scene adaptation and misdetection prevention
+  - Define when and how to refresh baseline without losing calibration integrity
+  - Add drift detection and correction mechanisms
+
 ### Testing & Validation
 - [ ] Launch cam-shift-detector alongside Charuco/Aruco detector and compare results for live testing mode
 - [ ] Add tools to analyze quality of feature tracking and matching

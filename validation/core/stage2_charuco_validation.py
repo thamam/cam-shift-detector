@@ -12,7 +12,7 @@ Usage:
 Inputs:
     - session_001/poses.csv - ChArUco ground truth (203 frames, 158 detected)
     - session_001/frames/*.jpg - Annotated video frames
-    - config_session_001.json - ROI configuration for session
+    - config/config_session_001.json - ROI configuration for session
     - camera.yaml - Camera intrinsics for 3D-to-2D projection
 
 Outputs:
@@ -145,7 +145,7 @@ class CharucoValidator:
 
         Args:
             session_dir: Path to session directory (e.g., "session_001")
-            config_path: Path to ROI config (e.g., "config_session_001.json")
+            config_path: Path to ROI config (e.g., "config/config_session_001.json")
             camera_yaml_path: Path to camera calibration file
         """
         self.session_dir = Path(session_dir)
@@ -480,7 +480,7 @@ def main():
 
     # Configuration
     session_dir = "session_001"
-    config_path = "config_session_001.json"
+    config_path = "config/config_session_001.json"
     camera_yaml = "camera.yaml"
 
     # Initialize validator

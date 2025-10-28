@@ -48,13 +48,14 @@ class RealDataLoader:
                              Defaults to {project_root}/validation/ground_truth/ground_truth.json
         """
         if sample_images_root is None:
-            # Default: assume validation/ is sibling to sample_images/
-            self.sample_images_root = Path(__file__).parent.parent / "sample_images"
+            # Default: assume validation/ is sibling to sample_images/ (go up to project root)
+            self.sample_images_root = Path(__file__).parent.parent.parent / "sample_images"
         else:
             self.sample_images_root = Path(sample_images_root)
             
         if ground_truth_path is None:
-            self.ground_truth_path = Path(__file__).parent / "ground_truth" / "ground_truth.json"
+            # Use the ground_truth symlink at validation/ground_truth/
+            self.ground_truth_path = Path(__file__).parent.parent / "ground_truth" / "ground_truth.json"
         else:
             self.ground_truth_path = Path(ground_truth_path)
         

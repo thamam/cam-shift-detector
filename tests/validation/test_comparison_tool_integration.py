@@ -41,8 +41,8 @@ class TestComparisonToolCLI:
             [
                 sys.executable, "tools/validation/comparison_tool.py",
                 "--camera-yaml", "camera.yaml",
-                "--charuco-config", "comparison_config.json",
-                "--camshift-config", "config_session_001.json",
+                "--charuco-config", "config/comparison_config.json",
+                "--camshift-config", "config/config_session_001.json",
                 "--output-dir", "test_output"
             ],
             cwd=PROJECT_ROOT,
@@ -60,8 +60,8 @@ class TestComparisonToolCLI:
                 sys.executable, "tools/validation/comparison_tool.py",
                 "--mode", "offline",
                 "--camera-yaml", "camera.yaml",
-                "--charuco-config", "comparison_config.json",
-                "--camshift-config", "config_session_001.json",
+                "--charuco-config", "config/comparison_config.json",
+                "--camshift-config", "config/config_session_001.json",
                 "--output-dir", "test_output"
             ],
             cwd=PROJECT_ROOT,
@@ -79,8 +79,8 @@ class TestComparisonToolCLI:
                 sys.executable, "tools/validation/comparison_tool.py",
                 "--mode", "invalid_mode",
                 "--camera-yaml", "camera.yaml",
-                "--charuco-config", "comparison_config.json",
-                "--camshift-config", "config_session_001.json",
+                "--charuco-config", "config/comparison_config.json",
+                "--camshift-config", "config/config_session_001.json",
                 "--output-dir", "test_output"
             ],
             cwd=PROJECT_ROOT,
@@ -128,8 +128,8 @@ class TestComparisonToolOfflineMode:
                 "--mode", "offline",
                 "--input-dir", str(session_001_frames_dir),
                 "--camera-yaml", "camera.yaml",
-                "--charuco-config", "comparison_config.json",
-                "--camshift-config", "config_session_001.json",
+                "--charuco-config", "config/comparison_config.json",
+                "--camshift-config", "config/config_session_001.json",
                 "--output-dir", str(test_output_dir)
             ],
             cwd=PROJECT_ROOT,
@@ -161,8 +161,8 @@ class TestComparisonToolOfflineMode:
                 "--mode", "offline",
                 "--input-dir", str(session_001_frames_dir),
                 "--camera-yaml", "camera.yaml",
-                "--charuco-config", "comparison_config.json",
-                "--camshift-config", "config_session_001.json",
+                "--charuco-config", "config/comparison_config.json",
+                "--camshift-config", "config/config_session_001.json",
                 "--output-dir", str(test_output_dir)
             ],
             cwd=PROJECT_ROOT,
@@ -220,8 +220,8 @@ class TestComparisonToolOfflineMode:
                 "--mode", "offline",
                 "--input-dir", str(session_001_frames_dir),
                 "--camera-yaml", "camera.yaml",
-                "--charuco-config", "comparison_config.json",
-                "--camshift-config", "config_session_001.json",
+                "--charuco-config", "config/comparison_config.json",
+                "--camshift-config", "config/config_session_001.json",
                 "--output-dir", str(test_output_dir)
             ],
             cwd=PROJECT_ROOT,
@@ -259,8 +259,8 @@ class TestComparisonToolOfflineMode:
                 "--mode", "offline",
                 "--input-dir", str(session_001_frames_dir),
                 "--camera-yaml", "camera.yaml",
-                "--charuco-config", "comparison_config.json",
-                "--camshift-config", "config_session_001.json",
+                "--charuco-config", "config/comparison_config.json",
+                "--camshift-config", "config/config_session_001.json",
                 "--output-dir", str(test_output_dir)
             ],
             cwd=PROJECT_ROOT,
@@ -300,8 +300,8 @@ class TestComparisonToolOfflineMode:
                 "--mode", "offline",
                 "--input-dir", str(session_001_frames_dir),
                 "--camera-yaml", "camera.yaml",
-                "--charuco-config", "comparison_config.json",
-                "--camshift-config", "config_session_001.json",
+                "--charuco-config", "config/comparison_config.json",
+                "--camshift-config", "config/config_session_001.json",
                 "--output-dir", str(test_output_dir)
             ],
             cwd=PROJECT_ROOT,

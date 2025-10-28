@@ -81,6 +81,9 @@ session_*/
 # Debug scripts
 debug_*.py
 
+# Config directory (user-specific runtime configs)
+config/
+
 # Claude Code temporary documentation
 claudedocs/
 
