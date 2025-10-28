@@ -23,7 +23,8 @@ from validation.utilities.comparison_metrics import (
     calculate_displacement_difference,
     calculate_threshold,
     classify_agreement,
-    calculate_charuco_displacement_2d
+    calculate_charuco_displacement_2d,
+    calculate_charuco_displacement_2d_components
 )
 
 
@@ -39,9 +40,13 @@ class DualDetectionResult:
         timestamp_ns: Nanosecond timestamp (time.time_ns())
         charuco_detected: Whether ChArUco board was detected
         charuco_displacement_px: ChArUco 2D displacement in pixels (NaN if not detected)
+        charuco_dx: ChArUco displacement X component in pixels (NaN if not detected)
+        charuco_dy: ChArUco displacement Y component in pixels (NaN if not detected)
         charuco_confidence: ChArUco confidence (corner count, NaN if not detected)
         camshift_status: Cam-shift detector status ("VALID" or "INVALID")
         camshift_displacement_px: Cam-shift 2D displacement in pixels
+        camshift_dx: Cam-shift displacement X component in pixels
+        camshift_dy: Cam-shift displacement Y component in pixels
         camshift_confidence: Cam-shift confidence score
         displacement_diff: ||d1-d2||_2 comparison metric (NaN if ChArUco not detected)
         agreement_status: "GREEN" if diff <= threshold, "RED" otherwise (None if ChArUco not detected)
@@ -51,9 +56,13 @@ class DualDetectionResult:
     timestamp_ns: int
     charuco_detected: bool
     charuco_displacement_px: float
+    charuco_dx: float
+    charuco_dy: float
     charuco_confidence: float
     camshift_status: str
     camshift_displacement_px: float
+    camshift_dx: float
+    camshift_dy: float
     camshift_confidence: float
     displacement_diff: float
     agreement_status: Optional[str]
@@ -221,12 +230,17 @@ class DualDetectorRunner:
             # ChArUco not detected - graceful handling
             charuco_detected = False
             charuco_displacement_px = np.nan
+            charuco_dx = np.nan
+            charuco_dy = np.nan
             charuco_confidence = np.nan
         else:
             # ChArUco detected - calculate displacement
             rvec, tvec, n_corners = pose_result
             charuco_detected = True
             charuco_displacement_px = calculate_charuco_displacement_2d(
+                tvec, self.tvec_baseline, self.K, self.z_distance_m
+            )
+            charuco_dx, charuco_dy = calculate_charuco_displacement_2d_components(
                 tvec, self.tvec_baseline, self.K, self.z_distance_m
             )
             charuco_confidence = float(n_corners)
@@ -236,6 +250,11 @@ class DualDetectorRunner:
         camshift_status = camshift_result["status"]
         camshift_displacement_px = camshift_result["translation_displacement"]
         camshift_confidence = camshift_result["confidence"]
+
+        # Extract component-wise displacements from movement detector
+        movement_detector = self.camshift_detector.movement_detector
+        camshift_dx = movement_detector.last_tx
+        camshift_dy = movement_detector.last_ty
 
         # --- Comparison Metrics ---
         if charuco_detected:
@@ -255,9 +274,13 @@ class DualDetectorRunner:
             timestamp_ns=timestamp_ns,
             charuco_detected=charuco_detected,
             charuco_displacement_px=charuco_displacement_px,
+            charuco_dx=charuco_dx,
+            charuco_dy=charuco_dy,
             charuco_confidence=charuco_confidence,
             camshift_status=camshift_status,
             camshift_displacement_px=camshift_displacement_px,
+            camshift_dx=camshift_dx,
+            camshift_dy=camshift_dy,
             camshift_confidence=camshift_confidence,
             displacement_diff=displacement_diff,
             agreement_status=agreement_status,

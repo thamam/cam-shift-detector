@@ -58,6 +58,10 @@ class MovementDetector:
         # crossCheck=True ensures bidirectional matching for higher quality matches
         self.matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
 
+        # Store last translation components for external access (Mode A enhanced metrics)
+        self.last_tx: float = 0.0
+        self.last_ty: float = 0.0
+
     def detect_movement(
         self,
         baseline_features: Tuple[List[cv2.KeyPoint], np.ndarray],
@@ -148,6 +152,10 @@ class MovementDetector:
             # NOTE: This only extracts translation. Rotation/scale/shear are ignored (MVP constraint).
             tx = H[0, 2]
             ty = H[1, 2]
+
+        # Store translation components (for Mode A enhanced metrics)
+        self.last_tx = float(tx)
+        self.last_ty = float(ty)
 
         # Calculate translation displacement magnitude (Task 2.5, AC-1.3.3)
         displacement = np.sqrt(tx**2 + ty**2)

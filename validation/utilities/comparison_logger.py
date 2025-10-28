@@ -5,8 +5,10 @@ Logs dual detector results to JSON, calculates MSE metrics, identifies worst
 matches, and generates matplotlib visualizations for analysis.
 """
 
+import csv
 import json
 import logging
+import time
 import numpy as np
 from pathlib import Path
 from datetime import datetime
@@ -115,6 +117,85 @@ class ComparisonLogger:
             json.dump(log_data, f, indent=2)
 
         logger.info(f"Saved comparison log: {output_path} ({len(self.results)} frames)")
+        return output_path
+
+    def save_csv(self) -> Path:
+        """Export comparison results to CSV format.
+
+        CSV columns: frame_id, dx_charuco, dy_charuco, dx_csd, dy_csd, 
+                     delta_dx, delta_dy, error_mag, inliers, total, rmse
+
+        Returns:
+            Path to saved CSV file
+
+        Raises:
+            ValueError: If no results have been logged
+        """
+        if not self.results:
+            raise ValueError("No results to export")
+
+        # Generate timestamp-based filename
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        output_path = self.output_dir / f"{self.session_name}_comparison_{timestamp}.csv"
+
+        # Calculate session RMSE
+        valid_results = [
+            r for r in self.results 
+            if not np.isnan(r.charuco_displacement_px) and not np.isnan(r.camshift_displacement_px)
+        ]
+        
+        if valid_results:
+            squared_errors = [
+                (r.charuco_displacement_px - r.camshift_displacement_px) ** 2 
+                for r in valid_results
+            ]
+            rmse = np.sqrt(np.mean(squared_errors))
+        else:
+            rmse = np.nan
+
+        # Write CSV
+        with open(output_path, 'w', newline='') as f:
+            writer = csv.writer(f)
+            
+            # Header
+            writer.writerow([
+                'frame_id', 'dx_charuco', 'dy_charuco', 'dx_csd', 'dy_csd',
+                'delta_dx', 'delta_dy', 'error_mag', 'inliers', 'total', 'rmse'
+            ])
+
+            # Data rows
+            for result in self.results:
+                # Calculate deltas and error magnitude
+                if not np.isnan(result.charuco_dx) and not np.isnan(result.camshift_dx):
+                    delta_dx = result.camshift_dx - result.charuco_dx
+                    delta_dy = result.camshift_dy - result.charuco_dy
+                    error_mag = np.sqrt(delta_dx**2 + delta_dy**2)
+                else:
+                    delta_dx = np.nan
+                    delta_dy = np.nan
+                    error_mag = np.nan
+
+                # Extract inliers/total from confidence scores
+                # ChArUco confidence = corner count (total)
+                # CamShift confidence = inlier ratio
+                total = result.charuco_confidence if not np.isnan(result.charuco_confidence) else 0
+                inliers = total  # Approximation: assume all ChArUco corners are inliers
+
+                writer.writerow([
+                    result.frame_idx,
+                    f"{result.charuco_dx:.2f}" if not np.isnan(result.charuco_dx) else "NaN",
+                    f"{result.charuco_dy:.2f}" if not np.isnan(result.charuco_dy) else "NaN",
+                    f"{result.camshift_dx:.2f}" if not np.isnan(result.camshift_dx) else "NaN",
+                    f"{result.camshift_dy:.2f}" if not np.isnan(result.camshift_dy) else "NaN",
+                    f"{delta_dx:.2f}" if not np.isnan(delta_dx) else "NaN",
+                    f"{delta_dy:.2f}" if not np.isnan(delta_dy) else "NaN",
+                    f"{error_mag:.2f}" if not np.isnan(error_mag) else "NaN",
+                    f"{inliers:.0f}",
+                    f"{total:.0f}",
+                    f"{rmse:.2f}" if not np.isnan(rmse) else "NaN"
+                ])
+
+        logger.info(f"Saved CSV export: {output_path} ({len(self.results)} frames)")
         return output_path
 
     def calculate_mse(self) -> float:

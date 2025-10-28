@@ -6,7 +6,7 @@ against cam-shift detector 2D displacement measurements.
 """
 
 import numpy as np
-from typing import List
+from typing import List, Tuple
 
 
 def calculate_displacement_difference(d1: float, d2: float) -> float:
@@ -119,6 +119,40 @@ def calculate_charuco_displacement_2d(
     displacement_2d_px = np.sqrt(dx_px**2 + dy_px**2)
 
     return float(displacement_2d_px)
+
+
+def calculate_charuco_displacement_2d_components(
+    tvec_current: np.ndarray,
+    tvec_baseline: np.ndarray,
+    K: np.ndarray,
+    z_distance_m: float = 1.15
+) -> Tuple[float, float]:
+    """Calculate ChArUco 2D displacement components (dx, dy) from 3D translation vectors.
+
+    Same calculation as calculate_charuco_displacement_2d but returns components instead of magnitude.
+
+    Args:
+        tvec_current: Current translation vector [x, y, z] in meters (3D)
+        tvec_baseline: Baseline translation vector [x, y, z] in meters (3D)
+        K: Camera matrix (3x3) with focal lengths at K[0,0] and K[1,1]
+        z_distance_m: Camera-to-board distance in meters (default: 1.15m)
+
+    Returns:
+        Tuple of (dx_px, dy_px) displacement components in pixels
+    """
+    # Extract focal lengths from camera matrix
+    fx = K[0, 0]  # Focal length X (pixels)
+    fy = K[1, 1]  # Focal length Y (pixels)
+
+    # Calculate 3D displacement (delta in meters)
+    delta_x_m = tvec_current[0, 0] - tvec_baseline[0, 0]
+    delta_y_m = tvec_current[1, 0] - tvec_baseline[1, 0]
+
+    # Project 3D displacement to 2D image plane
+    dx_px = (delta_x_m * fx) / z_distance_m
+    dy_px = (delta_y_m * fy) / z_distance_m
+
+    return float(dx_px), float(dy_px)
 
 
 def calculate_mse(charuco_list: List[float], camshift_list: List[float]) -> float:
