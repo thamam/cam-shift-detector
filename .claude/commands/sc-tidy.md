@@ -45,7 +45,7 @@ PRESERVE_DAYS = extract_preserve_days(FLAGS, default=0)
 **Scan Project Root:**
 ```bash
 # Get all files and directories in project root
-ls -lah /home/thh3/personal/cam-shift-detector/
+ls -lah {project-root}/
 ```
 
 **Apply Pattern Matching:**
