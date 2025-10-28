@@ -164,7 +164,7 @@ def run_validation(config_path: str = 'config.json') -> Dict:
 
     # Load ground truth
     print("📋 Loading ground truth sequences...")
-    stage2_data_dir = Path("validation/stage2_data")
+    stage2_data_dir = Path("validation/data/stage2")
     if not stage2_data_dir.exists():
         raise FileNotFoundError(f"Stage 2 data directory not found: {stage2_data_dir}")
 
