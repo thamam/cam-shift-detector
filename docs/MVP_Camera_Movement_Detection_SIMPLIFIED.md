@@ -19,6 +19,12 @@ Detect camera movement beyond threshold → Alert system → Trigger manual corr
 **Success Criteria:**
 System correctly identifies camera shifts and prevents use of corrupted measurement data.
 
+**Important Distinction - Detection Only, No Alignment:**
+This system performs DETECTION only - it identifies when camera movement has occurred and flags the data as invalid. It does NOT perform automatic alignment correction or image registration. The response to detected movement is:
+1. Flag measurements as INVALID to prevent corrupted data usage
+2. Alert operators for manual intervention (physical camera repositioning or recalibration)
+3. System remains in invalid state until manual recalibration is performed
+
 ---
 
 ## 2. MVP Scope
@@ -28,11 +34,24 @@ System correctly identifies camera shifts and prevents use of corrupted measurem
 **Core Functionality:**
 1. Static region definition tool (ROI selection)
 2. ORB feature extraction from static region
-3. Simple homography-based movement detection
-4. Threshold-based alerting (> 2 pixels = movement)
+3. Homography/Affine-based translation detection (TRANSLATION ONLY - see limitation below)
+4. Threshold-based alerting (> 2 pixels translation = movement)
 5. Flag file output (VALID/INVALID status)
 6. Manual recalibration capability
 7. Basic validation testing
+
+**Critical Architectural Limitation - Translation Detection Only:**
+The MVP implementation measures ONLY the translation displacement (tx, ty) extracted from the transformation matrix (homography or affine). It does NOT detect:
+- Pure rotation (camera rotates without translating)
+- Scale changes (zoom in/out)
+- Perspective distortion/shear
+
+**Why this matters:** A camera could rotate significantly (corrupting ROI alignment) while showing <2px translation, resulting in a false "no movement" detection. This is an acceptable MVP constraint because:
+1. Physical camera mounts typically fail via translation (loosening, vibration) rather than pure rotation
+2. Pure rotation without translation is geometrically rare in fixed camera scenarios
+3. The cost of false negatives for pure rotation is lower than the complexity of full 6-DOF analysis
+
+**Post-MVP Enhancement:** Full homography decomposition with separate rotation/scale/shear thresholds can be added if field data shows pure rotation events are occurring.
 
 **Key Constraints:**
 - Single camera only
@@ -357,8 +376,13 @@ class MovementDetector:
         if H is None:
             return True, float('inf')
 
-        # Calculate displacement from homography translation
-        displacement = np.sqrt(H[0,2]**2 + H[1,2]**2)
+        # Calculate displacement from homography TRANSLATION COMPONENTS ONLY
+        # NOTE: H[0,2] and H[1,2] are the translation (tx, ty) components
+        # This will be ZERO for pure rotation - rotation is NOT detected (MVP limitation)
+        # See "Critical Architectural Limitation" in Section 2 for details
+        tx = H[0, 2]
+        ty = H[1, 2]
+        displacement = np.sqrt(tx**2 + ty**2)
 
         movement_detected = displacement > self.threshold
         return movement_detected, displacement
@@ -366,13 +390,23 @@ class MovementDetector:
 
 **Detection Logic:**
 - Use simple homography estimation (no RANSAC initially)
-- Displacement = magnitude of translation vector from homography
-- Threshold: 2.0 pixels (configurable)
+- Displacement = magnitude of TRANSLATION VECTOR ONLY (tx, ty) from homography
+  - `displacement = sqrt(H[0,2]^2 + H[1,2]^2)`
+  - Does NOT measure rotation, scale, or perspective distortion
+  - Pure camera rotation will show ~0 displacement (false negative)
+- Threshold: 2.0 pixels translation (configurable)
 
-**When to Add RANSAC:**
-- If false positive rate > 5% in testing
-- Add `method=cv2.RANSAC` to `findHomography()`
-- Tune `ransacReprojThreshold` parameter
+**Actual Implementation Notes:**
+- Current production version uses affine transformation model (`use_affine_model=True`)
+- Affine model is more stable for pure translations and vertical movements
+- Both homography and affine extract translation components the same way
+- RANSAC was NOT needed - false positive rate <5% with simple method
+
+**When to Enhance Detection:**
+- If field data shows pure rotation events causing measurement corruption
+- Add rotation angle extraction from transformation matrix
+- Implement separate thresholds: translation_threshold AND rotation_threshold
+- Use full 6-DOF homography decomposition (see OpenCV `decomposeHomographyMat`)
 
 ---
 
@@ -565,11 +599,12 @@ class CameraMovementDetector:
 
 **Stage 1: Simulated Camera Transforms**
 - Take reference image
-- Apply known transformations (2px, 5px, 10px shifts)
+- Apply known TRANSLATION transformations (2px, 5px, 10px shifts in x/y)
 - Verify detection accuracy:
-  - 0-1.9px: No detection (below threshold)
-  - 2-10px: Detection triggered
+  - 0-1.9px translation: No detection (below threshold)
+  - 2-10px translation: Detection triggered
   - Target: >95% accuracy
+- **Important:** Pure rotation testing NOT included in Stage 1 (known limitation - rotation not detected)
 
 **Stage 2: Real Recorded Camera Shifts**
 - Use existing recordings where camera actually moved
@@ -644,7 +679,8 @@ cam-shift-detector/
 
 ### MVP is Successful if:
 
-1. ✅ **Detects 2+ pixel camera movements** with >95% accuracy (Stage 1 testing)
+1. ✅ **Detects 2+ pixel TRANSLATION movements** with >95% accuracy (Stage 1 testing)
+   - Note: Pure rotation detection is explicitly out of scope for MVP
 2. ✅ **Zero missed real camera shifts** in recorded footage (Stage 2 testing)
 3. ✅ **False positive rate <5%** in live deployment (Stage 3 testing)
 4. ✅ **API integration works** - DAF system receives status and halts on INVALID correctly
