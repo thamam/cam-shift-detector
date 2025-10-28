@@ -1,3 +1,7 @@
+---
+description: 'Guide human-centered design processes using empathy-driven methodologies. This workflow walks through the design thinking phases - Empathize, Define, Ideate, Prototype, and Test - to create solutions deeply rooted in user needs.'
+---
+
 # design-thinking
 
 IT IS CRITICAL THAT YOU FOLLOW THESE STEPS - while staying in character as the current agent persona you may have loaded:

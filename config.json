@@ -1,0 +1,11 @@
+{
+  "roi": {
+    "x": 32,
+    "y": 46,
+    "width": 502,
+    "height": 884
+  },
+  "threshold_pixels": 2.0,
+  "history_buffer_size": 100,
+  "min_features_required": 50
+}
