@@ -78,8 +78,10 @@ session_*/
 *_mse_graph.png
 *_worst_matches.txt
 
-# Debug scripts
+# Debug scripts and manual test utilities (tools/validation only)
 debug_*.py
+tools/validation/test_*.py
+tools/validation/analyze_*.py
 
 # Config directory (user-specific runtime configs)
 config/

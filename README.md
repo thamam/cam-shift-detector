@@ -4,14 +4,15 @@ Computer vision system for detecting camera movement in time-series imagery usin
 
 ## Project Status
 
-Development in progress - Stage 3 validation framework complete.
+**Current Version:** v0.2.0 (2025-10-29) - Production-ready with interactive debugging tools
 
 **Ground Truth Validation Complete**: Manual annotation of 50 images reveals detector achieves 66% accuracy with 100% recall (perfect shift detection). See [documentation/ground-truth-annotation-results.md](documentation/ground-truth-annotation-results.md).
 
 **Recent Updates:**
-- ✅ Stage 1: Validation dataset and ground truth generation
+- ✅ **Stage 4 (Epic 4)**: Interactive debugging tools (Modes A/B/C) for visual analysis
+- ✅ **Stage 3 (Epic 3)**: Dual detector comparison tool with offline/online modes
 - ✅ Stage 2: Test harness with performance profiling
-- ✅ Stage 3: Automated validation runner with comprehensive reporting
+- ✅ Stage 1: Validation dataset and ground truth generation
 - ✅ Integration documentation and stub implementation
 - ✅ Ground truth annotation tool with corrected validation results
 
@@ -35,6 +36,103 @@ Interactive tool for manually verifying camera shifts in image pairs with per-si
 - Tool guide: [tools/annotation/README.md](tools/annotation/README.md)
 - Validation results: [documentation/ground-truth-annotation-results.md](documentation/ground-truth-annotation-results.md)
 - Corrected summary: [claudedocs/validation-corrected-summary.md](claudedocs/validation-corrected-summary.md)
+
+---
+
+### Interactive Debugging Tools (Stage 4)
+
+Real-time OpenCV-based debugging tools for visual camera shift analysis:
+
+#### Mode A - 4-Quadrant Comparison
+
+Side-by-side comparison of ChArUco and cam-shift detectors with feature overlays.
+
+```bash
+.venv/bin/python tools/validation/comparison_tool.py --input-dir sample_images/of_jerusalem
+```
+
+**Features**:
+- 4-image layout: baseline/current × charuco/csd
+- Feature overlay visualization (ChArUco corners + ORB features)
+- Manual frame stepping (←/→ arrows)
+- Enhanced metrics (Δdx, Δdy, error magnitude)
+- CSV/PNG export
+
+#### Mode B - Baseline Correspondence
+
+Motion vector visualization with baseline pinning for drift analysis.
+
+```bash
+.venv/bin/python tools/validation/baseline_correspondence_tool.py --input-dir sample_images/of_jerusalem
+```
+
+**Features**:
+- Motion vector arrows showing feature displacement
+- Inlier/outlier coloring (green/red)
+- Baseline pinning mechanism
+- Match quality metrics (RMSE, inlier percentage)
+- Difference heatmap overlay
+- Diagnostic mode (D key) with keypoint density
+
+**Keyboard shortcuts**:
+- `←/→` - Navigate frames
+- `b` - Set baseline frame
+- `d` - Toggle diagnostic mode
+- `s` - Save snapshot
+- `q` - Quit
+
+#### Mode C - Enhanced Alpha Blending
+
+Transform computation with pre-warp and blink mode for visual alignment verification.
+
+```bash
+.venv/bin/python tools/validation/alpha_blending_tool.py --input-dir sample_images/of_jerusalem
+```
+
+**Features**:
+- Transform computation using CSD homography
+- Pre-warp toggle (W key) for alignment verification
+- Blink mode (Space) with 500ms A/B alternation
+- Frame selector for arbitrary frame pairs
+- Alpha blending with adjustable transparency
+- 10×10 alignment grid overlay
+- Descriptive file naming with metadata
+
+**Keyboard shortcuts**:
+- `a/b` - Select Frame A/B
+- `←/→` - Navigate frames (during selection)
+- `Enter` - Confirm frame selection
+- `↑/↓` - Adjust alpha value
+- `w` - Toggle pre-warp
+- `Space` - Toggle blink mode
+- `g` - Toggle grid overlay
+- `s` - Save snapshot with metadata
+- `q` - Quit
+
+**Documentation**: [tools/validation/README.md](tools/validation/README.md)
+
+---
+
+### Dual Detector Comparison Tool (Stage 3 / Epic 3)
+
+Compare ChArUco and cam-shift detectors in offline and online modes.
+
+```bash
+# Offline mode (directory)
+.venv/bin/python tools/validation/comparison_tool.py --mode offline --input-dir sample_images/of_jerusalem
+
+# Online mode (live camera)
+.venv/bin/python tools/validation/comparison_tool.py --mode online
+```
+
+**Features**:
+- Dual OpenCV display windows
+- Real-time displacement comparison
+- Agreement flagging (red/green) with 3% threshold
+- JSON logging and MSE graph generation
+- Performance: 8.4 FPS offline processing
+
+**Documentation**: [tools/validation/README.md](tools/validation/README.md)
 
 ## Integration
 

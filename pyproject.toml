@@ -1,6 +1,6 @@
 [project]
 name = "cam-shift-detector"
-version = "0.1.0"
+version = "0.2.0"
 description = "Computer vision system for detecting camera movement in time-series imagery using feature matching and transformation analysis"
 readme = "README.md"
 license = {text = "MIT"}

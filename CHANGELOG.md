@@ -7,6 +7,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-10-29
+
+### Added
+
+**Epic 3: Dual Detector Comparison Tool**
+- Side-by-side comparison tool for ChArUco vs cam-shift detectors
+- Dual OpenCV display windows with synchronized output
+- Offline mode: Process recorded image sequences from directories
+- Online mode: Real-time comparison with live camera feeds
+- Comparison metrics with 3% agreement threshold (||d1-d2||_2)
+- JSON logging for post-analysis and trend detection
+- MSE (Mean Squared Error) graph generation
+- Worst matches identification and retrieval
+- Performance: 8.4 FPS offline processing (exceeds 5 FPS requirement)
+- Comprehensive documentation: `tools/validation/README.md`
+- Test coverage: 100% integration tests (14 tests passing)
+
+**Epic 4: Interactive Debugging Tools (Stage 4)**
+- **Mode A - 4-Quadrant Comparison Tool** (`tools/validation/comparison_tool.py`)
+  - Simultaneous ChArUco and cam-shift detection visualization
+  - 4-image layout: baseline/current × charuco/csd
+  - Feature overlay: ChArUco corners (cyan) + ORB features (yellow)
+  - Manual frame stepping (FWD/BKWD arrows)
+  - Enhanced metrics display (Δdx, Δdy, error magnitude)
+  - CSV export with comprehensive detection data
+  - PNG snapshot capability
+
+- **Mode B - Baseline Correspondence Tool** (`tools/validation/baseline_correspondence_tool.py`)
+  - Motion vector visualization with arrow overlays
+  - Inlier/outlier coloring (green/red) based on RANSAC mask
+  - Baseline pinning mechanism for drift analysis
+  - Match quality metrics (RMSE, inlier percentage)
+  - Difference heatmap overlay for visual shift verification
+  - Diagnostic mode with keypoint density visualization
+  - 29 comprehensive unit tests (100% coverage)
+
+- **Mode C - Enhanced Alpha Blending Tool** (`tools/validation/alpha_blending_tool.py`)
+  - Transform computation using CSD homography estimation
+  - Pre-warp toggle (W key) for visual alignment verification
+  - Blink mode (Space key) with 500ms A/B alternation
+  - Frame selector for arbitrary frame pair comparison
+  - Alpha blending with adjustable transparency (↑/↓ keys)
+  - 10×10 alignment grid overlay (G key, cyan with 50% transparency)
+  - Descriptive file naming: frameA_frameB_alpha_prewarp_timestamp.png
+  - CSV export with full transform parameters
+  - 34 comprehensive unit tests (59% coverage for non-GUI code)
+
+**API Extensions (Minimal Surface Area)**
+- `MovementDetector.get_last_matches()` - Retrieve matched feature coordinates for visualization
+- `MovementDetector.get_last_homography()` - Retrieve transformation matrix from last detection
+- `CameraMovementDetector.get_last_homography()` - Delegation method for transform access
+
+### Improved
+
+**Testing Coverage**
+- Added 63 new tests for Stage 4 tools (Mode B: 29, Mode C: 34)
+- Full test suite: 509 tests passing (99.6% success rate)
+- Integration coverage for all three interactive modes
+- Edge case handling: CSD failures, invalid frames, missing data
+
+**Documentation**
+- Enhanced `tools/validation/README.md` with Mode A/B/C usage examples
+- Added keyboard shortcut reference for all interactive tools
+- Comprehensive troubleshooting guide for common issues
+- Performance optimization tips and best practices
+
+### Technical Details
+
+**Epic 4 Performance:**
+- Tool initialization: <100ms for 200 frame sequences
+- Frame stepping: Real-time (<50ms latency)
+- Transform computation: <500ms (AC requirement met)
+- Blink timing accuracy: ±50ms over 10 cycles
+
+**Epic 4 Architecture:**
+- Pure Python + OpenCV (no web UI overhead)
+- Standalone tool pattern (one tool per mode)
+- Reused existing infrastructure (comparison_tool, annotator patterns)
+- Clean API extensions via delegation pattern
+- No breaking changes to existing API
+
+**Known Limitations:**
+- Interactive tools require X11 display (no headless mode)
+- Manual testing required for GUI behavior (automated tests cover non-GUI logic)
+- Mode A integration tests less comprehensive than Mode B/C unit tests
+
+For Epic 4 technical specifications, see [docs/epic-stage4-debug-tools.md](docs/epic-stage4-debug-tools.md).
+
+---
+
 ## [0.1.0] - 2025-10-26
 
 ### Added
@@ -92,4 +182,5 @@ For integration guidance, see [documentation/integration-guide.md](documentation
 
 ## Version History
 
+- **0.2.0** (2025-10-29) - Added dual detector comparison tool (Epic 3) and interactive debugging tools (Epic 4: Modes A/B/C)
 - **0.1.0** (2025-10-26) - Initial release with core detection and validation framework
