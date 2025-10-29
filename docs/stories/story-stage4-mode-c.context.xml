@@ -1,0 +1,224 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>Stage 4</epicId>
+    <storyId>STAGE4-MODE-C</storyId>
+    <title>Mode C - Enhanced Alpha Blending Tool</title>
+    <status>drafted</status>
+    <generatedAt>2025-10-29</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/story-stage4-mode-c.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>validation engineer verifying frame alignment</asA>
+    <iWant>an enhanced alpha blending tool with transform computation and blink toggle</iWant>
+    <soThat>I can quickly verify if two frames are properly aligned and detect subtle camera shifts visually</soThat>
+    <tasks>
+      <task phase="1" ac="AC1">
+        <item>Modify tools/annotation/ground_truth_annotator.py to integrate CSD module</item>
+        <item>Add CSD module integration for transform computation</item>
+        <item>Implement pre-warp toggle mechanism (w key)</item>
+        <item>Implement frame warping using computed homography</item>
+        <item>Add pre-warp status indicator overlay</item>
+        <item>Test with known shifted frame pairs</item>
+      </task>
+      <task phase="2" ac="AC2">
+        <item>Implement blink mode state machine</item>
+        <item>Add timer-based alternation (500ms intervals)</item>
+        <item>Implement Space key handler</item>
+        <item>Add blink mode indicator overlay</item>
+        <item>Test with subtle shift detection</item>
+      </task>
+      <task phase="3" ac="AC3">
+        <item>Implement frame selection mode state machine</item>
+        <item>Add keyboard handlers for a and b keys</item>
+        <item>Implement frame navigation during selection</item>
+        <item>Add confirmation mechanism (Enter key)</item>
+        <item>Display selected frame indices</item>
+        <item>Test with arbitrary frame pairs</item>
+      </task>
+      <task phase="4" ac="AC4">
+        <item>Implement grid drawing function (10×10 lines)</item>
+        <item>Add toggle mechanism (g key)</item>
+        <item>Overlay grid on blended view</item>
+        <item>Test grid visibility on various image content</item>
+      </task>
+      <task phase="5" ac="AC5">
+        <item>Update snapshot function with metadata</item>
+        <item>Generate meaningful filenames (frameA_frameB_alpha_prewarp.png)</item>
+        <item>Export transform parameters to CSV</item>
+        <item>Test export functionality</item>
+      </task>
+      <task phase="6" ac="all">
+        <item>Unit tests for transform computation</item>
+        <item>Integration test with frame pairs</item>
+        <item>Verify blink timing accuracy</item>
+        <item>Verify pre-warp alignment improvement</item>
+        <item>Edge case testing: detection failures, invalid frames</item>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC1" title="Transform Computation &amp; Pre-Warp">
+      <requirement>Compute homography transform between selected frames using CSD</requirement>
+      <requirement>w key toggles pre-warp mode (warp Frame B to align with Frame A before blending)</requirement>
+      <requirement>Display shows "Pre-warp: ON" or "Pre-warp: OFF" indicator</requirement>
+      <requirement>Pre-warped blend shows better alignment for shifted frames</requirement>
+      <requirement>Transform computation completes in &lt;500ms</requirement>
+    </criterion>
+    <criterion id="AC2" title="Blink Toggle for A/B Comparison">
+      <requirement>Space key toggles rapid A/B switching (blink mode)</requirement>
+      <requirement>Blink alternates between Frame A and Frame B every 500ms</requirement>
+      <requirement>Blink mode indicator displayed on screen ("Blink: ON")</requirement>
+      <requirement>Press Space again to return to blended view</requirement>
+      <requirement>Blink helps identify subtle shifts</requirement>
+    </criterion>
+    <criterion id="AC3" title="Frame Selector for Arbitrary Pairs">
+      <requirement>a key enters Frame A selection mode</requirement>
+      <requirement>b key enters Frame B selection mode</requirement>
+      <requirement>In selection mode, →/← keys navigate frames</requirement>
+      <requirement>Press Enter to confirm frame selection</requirement>
+      <requirement>Selected frame indices displayed in status bar</requirement>
+      <requirement>Default: Frame A = first, Frame B = current</requirement>
+    </criterion>
+    <criterion id="AC4" title="Alpha Blending with Grid Overlay">
+      <requirement>↑/↓ keys adjust alpha value (already exists)</requirement>
+      <requirement>Alpha value displayed as percentage (e.g., "Alpha: 50%")</requirement>
+      <requirement>g key toggles alignment grid overlay</requirement>
+      <requirement>Grid shows 10×10 reference lines for alignment checking</requirement>
+      <requirement>Grid color: cyan with 50% transparency</requirement>
+    </criterion>
+    <criterion id="AC5" title="Export and Snapshot">
+      <requirement>s key saves current blended view as PNG</requirement>
+      <requirement>Filename includes Frame A and Frame B indices</requirement>
+      <requirement>Export includes metadata (alpha, pre-warp status)</requirement>
+      <requirement>CSV export with transform parameters</requirement>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/Stage_4_prompt.md</path>
+        <title>Stage 4 Test Modes Technical Specification</title>
+        <section>Mode C - Alpha blend A/B</section>
+        <snippet>Visual alignment check. Select two frames, compute transform, blend. Process: CSD computes transform between selected frames on demand. Display: alpha blend, optional pre-warp using computed transform. Controls: frame selectors, alpha slider, blink toggle, pre-warp toggle.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epic-stage4-debug-tools.md</path>
+        <title>Epic 4 - Interactive Debugging Tools</title>
+        <section>Story 3 - Mode C</section>
+        <snippet>Enhanced alpha blending tool with transform computation and blink toggle for visual frame alignment verification and subtle camera shift detection.</snippet>
+      </doc>
+      <doc>
+        <path>README.md</path>
+        <title>Project README</title>
+        <section>Testing and Validation</section>
+        <snippet>Camera shift detection system for DAF water quality monitoring. Stage 3 validation complete - 66% accuracy, 100% recall on 50 real DAF site images.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>tools/annotation/ground_truth_annotator.py</path>
+        <kind>tool</kind>
+        <symbol>AnnotationToolV2</symbol>
+        <lines>34-300</lines>
+        <reason>Existing alpha blending annotation tool - base for Mode C enhancements. Already has alpha adjustment (Up/Down keys), needs CSD integration, pre-warp, blink toggle, grid overlay, and frame selection.</reason>
+      </artifact>
+      <artifact>
+        <path>src/camera_movement_detector.py</path>
+        <kind>module</kind>
+        <symbol>CameraMovementDetector</symbol>
+        <lines>1-200</lines>
+        <reason>Main CSD API for transform computation between frames. Used to compute homography for pre-warp feature.</reason>
+      </artifact>
+      <artifact>
+        <path>src/movement_detector.py</path>
+        <kind>module</kind>
+        <symbol>MovementDetector</symbol>
+        <lines>1-300</lines>
+        <reason>Core homography computation. Already has get_last_homography() method (added in Mode B) needed for pre-warp functionality.</reason>
+      </artifact>
+      <artifact>
+        <path>tools/validation/baseline_correspondence_tool.py</path>
+        <kind>tool</kind>
+        <symbol>draw_motion_vectors</symbol>
+        <lines>400-450</lines>
+        <reason>Reference implementation for OpenCV visualization patterns and keyboard controls. Can reuse patterns for grid overlay and status indicators.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <python>
+        <package name="opencv-python" version=">=4.12.0.88">Computer vision library for image processing, warping, blending</package>
+        <package name="numpy" version=">=1.24.0">Array operations for image manipulation</package>
+      </python>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Modify existing tools/annotation/ground_truth_annotator.py rather than creating new tool</constraint>
+    <constraint>Reuse CSD module API (CameraMovementDetector) without modifications</constraint>
+    <constraint>Use get_last_homography() method already added to MovementDetector in Mode B</constraint>
+    <constraint>Transform computation must complete in less than 500ms per AC1 requirement</constraint>
+    <constraint>Blink timing must be accurate to ±50ms (500ms intervals per AC2)</constraint>
+    <constraint>Maintain existing keyboard control patterns from annotation tool (Up/Down for alpha)</constraint>
+    <constraint>Export filenames must include frame indices and metadata per AC5</constraint>
+  </constraints>
+  <interfaces>
+    <interface>
+      <name>CameraMovementDetector.set_baseline</name>
+      <kind>method</kind>
+      <signature>set_baseline(image_array: np.ndarray) -> None</signature>
+      <path>src/camera_movement_detector.py</path>
+    </interface>
+    <interface>
+      <name>CameraMovementDetector.process_frame</name>
+      <kind>method</kind>
+      <signature>process_frame(image_array: np.ndarray, frame_id: str = None) -> dict</signature>
+      <path>src/camera_movement_detector.py</path>
+    </interface>
+    <interface>
+      <name>MovementDetector.get_last_homography</name>
+      <kind>method</kind>
+      <signature>get_last_homography() -> np.ndarray | None</signature>
+      <path>src/movement_detector.py</path>
+      <note>Added in Mode B implementation for homography access</note>
+    </interface>
+    <interface>
+      <name>cv2.warpPerspective</name>
+      <kind>function</kind>
+      <signature>warpPerspective(src, M, dsize, ...) -> dst</signature>
+      <path>opencv-python</path>
+      <note>Used for pre-warp transformation in AC1</note>
+    </interface>
+    <interface>
+      <name>cv2.addWeighted</name>
+      <kind>function</kind>
+      <signature>addWeighted(src1, alpha, src2, beta, gamma) -> dst</signature>
+      <path>opencv-python</path>
+      <note>Used for alpha blending in AC4</note>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>Project uses pytest testing framework with >=85% coverage requirement. Tests must validate both functional correctness and performance requirements (transform computation &lt;500ms, blink timing ±50ms). Integration tests verify keyboard controls and visual output. Follow existing test patterns in tests/validation/ directory.</standards>
+    <locations>tests/validation/, tests/annotation/</locations>
+    <ideas>
+      <test ac="AC1">Unit test: transform computation completes in &lt;500ms with known frame pairs</test>
+      <test ac="AC1">Integration test: pre-warp toggle switches mode and updates display indicator</test>
+      <test ac="AC1">Visual test: pre-warped blend shows better alignment than non-warped for shifted frames</test>
+      <test ac="AC2">Unit test: blink timing accuracy within ±50ms over 10 cycles</test>
+      <test ac="AC2">Integration test: Space key toggles blink mode and updates indicator</test>
+      <test ac="AC2">Integration test: blink alternates between Frame A and Frame B at correct intervals</test>
+      <test ac="AC3">Integration test: 'a' and 'b' keys enter selection mode correctly</test>
+      <test ac="AC3">Integration test: arrow keys navigate frames during selection</test>
+      <test ac="AC3">Integration test: Enter confirms selection and updates display</test>
+      <test ac="AC4">Unit test: grid overlay draws 10×10 lines with cyan color and 50% transparency</test>
+      <test ac="AC4">Integration test: 'g' key toggles grid visibility</test>
+      <test ac="AC5">Integration test: 's' key saves PNG with correct filename format (frameA_frameB_alpha_prewarp.png)</test>
+      <test ac="AC5">Integration test: CSV export includes transform parameters (homography matrix values)</test>
+      <test ac="all">Edge case: CSD detection failure (insufficient features) - tool handles gracefully</test>
+      <test ac="all">Edge case: invalid frame index selection - tool prevents or handles error</test>
+    </ideas>
+  </tests>
+</story-context>

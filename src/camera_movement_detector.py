@@ -321,6 +321,26 @@ class CameraMovementDetector:
             # Insufficient features or invalid format
             return False
 
+    def get_last_homography(self) -> Optional[np.ndarray]:
+        """Get transformation matrix from last process_frame() call.
+
+        Returns the homography or affine transformation matrix computed during
+        the most recent process_frame() call. Useful for pre-warping frames
+        in visualization tools.
+
+        Returns:
+            Homography matrix (3x3) or Affine matrix (2x3), or None if no
+            frame has been processed yet.
+
+        Example:
+            >>> detector.set_baseline(baseline_frame)
+            >>> detector.process_frame(current_frame)
+            >>> H = detector.get_last_homography()
+            >>> if H is not None:
+            ...     warped = cv2.warpPerspective(current_frame, H, (w, h))
+        """
+        return self.movement_detector.get_last_homography()
+
     def _validate_image_format(self, image_array: np.ndarray) -> None:
         """Validate image array format and raise descriptive error if invalid.
 
