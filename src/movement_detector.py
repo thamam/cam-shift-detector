@@ -6,7 +6,7 @@ It calculates displacement magnitude and confidence scores to determine
 if the camera has moved beyond a configured threshold.
 """
 
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import cv2
 import numpy as np
@@ -57,6 +57,17 @@ class MovementDetector:
         # Use Brute Force Matcher with Hamming distance for ORB descriptors
         # crossCheck=True ensures bidirectional matching for higher quality matches
         self.matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+
+        # Store last translation components for external access (Mode A enhanced metrics)
+        self.last_tx: float = 0.0
+        self.last_ty: float = 0.0
+
+        # Store last matches, mask, and homography for Mode B visualization
+        self.last_matches: List[Tuple[Tuple[float, float], Tuple[float, float]]] = []
+        self.last_mask: Optional[np.ndarray] = None
+        self.last_homography: Optional[np.ndarray] = None
+        self.last_baseline_keypoints: List[cv2.KeyPoint] = []
+        self.last_current_keypoints: List[cv2.KeyPoint] = []
 
     def detect_movement(
         self,
@@ -149,6 +160,24 @@ class MovementDetector:
             tx = H[0, 2]
             ty = H[1, 2]
 
+        # Store translation components (for Mode A enhanced metrics)
+        self.last_tx = float(tx)
+        self.last_ty = float(ty)
+
+        # Store matches and transformation matrix for Mode B visualization
+        self.last_baseline_keypoints = baseline_keypoints
+        self.last_current_keypoints = current_keypoints
+        self.last_matches = [
+            (
+                (baseline_keypoints[m.queryIdx].pt[0], baseline_keypoints[m.queryIdx].pt[1]),
+                (current_keypoints[m.trainIdx].pt[0], current_keypoints[m.trainIdx].pt[1])
+            )
+            for m in matches
+        ]
+        self.last_mask = mask
+        # Store homography matrix (H for homography, M for affine)
+        self.last_homography = H if not self.use_affine_model else M
+
         # Calculate translation displacement magnitude (Task 2.5, AC-1.3.3)
         displacement = np.sqrt(tx**2 + ty**2)
 
@@ -212,3 +241,29 @@ class MovementDetector:
             raise ValueError(
                 f"Invalid {param_name} format: descriptors array is empty"
             )
+
+    def get_last_matches(self) -> Tuple[List[Tuple[Tuple[float, float], Tuple[float, float]]], np.ndarray]:
+        """Get match correspondences from last detect_movement() call.
+
+        Returns:
+            Tuple of (matches, mask) where:
+                - matches: List of ((x0, y0), (x1, y1)) baseline-to-current point pairs
+                - mask: Inlier mask array (1=inlier, 0=outlier)
+
+        Note:
+            This method is designed for Mode B visualization. Call detect_movement()
+            before calling this method to ensure fresh data.
+        """
+        return (self.last_matches, self.last_mask if self.last_mask is not None else np.array([]))
+
+    def get_last_homography(self) -> Optional[np.ndarray]:
+        """Get transformation matrix from last detect_movement() call.
+
+        Returns:
+            Homography matrix (3x3) or Affine matrix (2x3), or None if not computed
+
+        Note:
+            Returns homography (8-DOF) when use_affine_model=False, or
+            affine matrix (6-DOF) when use_affine_model=True.
+        """
+        return self.last_homography

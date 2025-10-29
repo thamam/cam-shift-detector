@@ -1,0 +1,492 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>STAGE4</epicId>
+    <storyId>MODE-B</storyId>
+    <title>Mode B - Baseline Correspondence Tool</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-10-28</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/story-stage4-mode-b.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>QA engineer investigating feature matching quality</asA>
+    <iWant>a tool that shows motion vectors and match correspondences against a pinned baseline</iWant>
+    <soThat>I can visualize inliers, outliers, and match quality for each frame in the sequence</soThat>
+    <tasks>
+**Phase 1: New Tool Scaffolding (AC: #1, #4)**
+- Create tools/validation/baseline_correspondence_tool.py
+- Implement argument parser (input_dir, config paths, output_dir)
+- Implement frame loader (reuse from comparison_tool.py)
+- Implement manual stepping controls (→/← keys)
+- Implement baseline pinning (b key)
+- Test with sample_images/ directory
+
+**Phase 2: CSD Match Extraction (AC: #2)**
+- Call CSD detector with baseline and current frame
+- Extract match correspondences (x0, y0, x1, y1, inlier flag)
+- Implement motion vector drawing function
+- Draw arrows with color-coding (green/red)
+- Add toggle mechanism (v key)
+- Test with known shifted pairs
+
+**Phase 3: Match Quality Metrics (AC: #3)**
+- Calculate inlier count / total matches
+- Calculate inlier ratio percentage
+- Extract RMSE from CSD detector result
+- Implement metrics overlay panel
+- Add color-coding logic
+- Test with various quality levels
+
+**Phase 4: Difference Heatmap (AC: #5, Optional)**
+- Compute homography from baseline to current
+- Warp baseline frame using homography
+- Calculate pixel-wise absolute difference
+- Apply color map (cv2.applyColorMap)
+- Implement toggle mechanism (h key)
+- Test heatmap visualization
+
+**Phase 5: Testing & Export**
+- Unit tests for motion vector drawing
+- Integration test with 50-frame sequence
+- CSV export with match quality metrics
+- PNG snapshot capability
+- Performance test: ensure <100ms per frame
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+**AC1: Baseline Pinning Mechanism**
+- User can press b key to set current frame as baseline
+- Baseline confirmation message displayed on screen
+- Baseline frame stored and used for all subsequent comparisons
+- Baseline can be changed at any time by pressing b again
+- Baseline frame thumbnail displayed in corner of window
+
+**AC2: Motion Vector Visualization**
+- Arrows drawn from baseline feature locations to current frame locations
+- Inlier arrows colored GREEN
+- Outlier arrows colored RED
+- Arrow thickness proportional to match confidence (optional)
+- Toggle motion vectors with v key (show/hide)
+- Minimum 50 matches required for visualization
+
+**AC3: Match Quality Metrics Display**
+- Display inlier count / total matches (e.g., "142/210 inliers")
+- Display RMSE value in pixels
+- Display confidence score from CSD detector
+- Display inlier ratio as percentage (e.g., "67.6%")
+- Color-code metrics: GREEN if ratio > 80%, ORANGE if 50-80%, RED if < 50%
+- Metrics overlaid on top-right corner of frame
+
+**AC4: Manual Frame Stepping**
+- → key advances to next frame
+- ← key goes back to previous frame
+- q key quits and saves results
+- Frame index displayed in status bar
+- Baseline always compared against current frame (not sequential pairs)
+
+**AC5: Difference Heatmap (Optional)**
+- h key toggles heatmap view
+- Heatmap shows pixel-wise difference between warped baseline and current
+- Color scale: blue (low difference) to red (high difference)
+- Heatmap overlaid with 50% transparency
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <!-- Primary Requirements -->
+      <doc>
+        <path>docs/Stage_4_prompt.md</path>
+        <title>Stage 4 Interactive Debugging Tools Requirements</title>
+        <section>Section 3: Mode B - Baseline Correspondence</section>
+        <snippet>Requirements for Mode B: Baseline pinning mechanism, motion vector visualization from baseline to current frame, match quality metrics display (inliers/outliers/RMSE), and optional difference heatmap with color coding.</snippet>
+      </doc>
+
+      <!-- Epic Overview -->
+      <doc>
+        <path>docs/epic-stage4-debug-tools.md</path>
+        <title>Epic: Stage 4 Interactive Debugging Tools</title>
+        <section>Story 2: Mode B Overview</section>
+        <snippet>Epic-level context defining Mode B as 3-point story for feature correspondence visualization. Part of 10-point epic alongside Mode A (5pts) and Mode C (2pts).</snippet>
+      </doc>
+
+      <!-- Mode A Reference (Predecessor) -->
+      <doc>
+        <path>docs/stories/story-stage4-mode-a.md</path>
+        <title>Story: Mode A - 4-Image Comparison (COMPLETED)</title>
+        <section>Implementation Patterns and Learnings</section>
+        <snippet>Mode A completed 2025-10-28. Established patterns: manual frame stepping with cv2.waitKey(0), feature visualization overlays, CSV export with keyboard handlers, frame caching for instant navigation. Reuse frame loader, keyboard control patterns, and display functions. All 191 tests passing.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/story-stage4-mode-a.context.xml</path>
+        <title>Mode A Context XML (Reference)</title>
+        <section>Code Artifacts and Interfaces</section>
+        <snippet>Mode A context shows comparison_tool.py structure, DualDetectorRunner usage patterns, feature extraction methods, and testing approach. Reference for tool scaffolding and keyboard control implementation.</snippet>
+      </doc>
+
+      <!-- Comparison Tool Documentation -->
+      <doc>
+        <path>tools/validation/README.md</path>
+        <title>ChArUco vs Cam-Shift Comparison Tool Documentation</title>
+        <section>Keyboard Controls and Display Patterns</section>
+        <snippet>Existing comparison tool documentation showing keyboard control patterns, frame navigation, and display window structure. Provides foundation for Mode B tool design.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <!-- Main Files from Mode A (Reuse Patterns) -->
+      <code>
+        <path>tools/validation/comparison_tool.py</path>
+        <kind>reference implementation</kind>
+        <symbol>run_offline_mode_a</symbol>
+        <lines>775-925</lines>
+        <reason>Mode A implementation shows frame loader pattern (load all images, cache in memory), manual stepping logic (cv2.waitKey(0) with →/← handlers), and keyboard control structure. Reuse these patterns for Mode B baseline_correspondence_tool.py.</reason>
+      </code>
+
+      <!-- CSD Detector Core (Match Extraction) -->
+      <code>
+        <path>src/camera_movement_detector.py</path>
+        <kind>detector API</kind>
+        <symbol>CameraMovementDetector</symbol>
+        <lines>19-352</lines>
+        <reason>Main CSD detector. Contains feature_extractor (ORB features) and movement_detector (feature matching). Need to access match correspondences for motion vector visualization. May need to expose get_match_correspondences() method.</reason>
+      </code>
+      <code>
+        <path>src/feature_extractor.py</path>
+        <kind>feature detection</kind>
+        <symbol>FeatureExtractor</symbol>
+        <lines>1-223</lines>
+        <reason>Extracts ORB keypoints and descriptors. Stores baseline_features (keypoints, descriptors). Need to access these for baseline feature locations in motion vector visualization.</reason>
+      </code>
+      <code>
+        <path>src/movement_detector.py</path>
+        <kind>motion estimation</kind>
+        <symbol>MovementDetector.detect_movement</symbol>
+        <lines>64-179</lines>
+        <reason>Performs BFMatcher feature matching and homography/affine estimation. Returns (moved, displacement, confidence) with inlier mask. Need to access matches and mask for motion vector visualization and inlier/outlier classification.</reason>
+      </code>
+
+      <!-- Match Extraction Extension Points -->
+      <code>
+        <path>src/movement_detector.py</path>
+        <kind>motion estimation</kind>
+        <symbol>MovementDetector.matcher</symbol>
+        <lines>58-58</lines>
+        <reason>BFMatcher instance (crossCheck=True). After detect_movement(), matches are available internally. Need to store or expose matches for Mode B visualization.</reason>
+      </code>
+      <code>
+        <path>src/movement_detector.py</path>
+        <kind>motion estimation</kind>
+        <symbol>MovementDetector.last_tx, last_ty</symbol>
+        <lines>61-62</lines>
+        <reason>Translation components stored after detect_movement(). Pattern established in Mode A for exposing internal state. Can follow similar pattern for exposing matches.</reason>
+      </code>
+
+      <!-- Homography and Warping -->
+      <code>
+        <path>src/movement_detector.py</path>
+        <kind>motion estimation</kind>
+        <symbol>cv2.findHomography / cv2.estimateAffinePartial2D</symbol>
+        <lines>120-154</lines>
+        <reason>Computes transformation matrix (homography or affine) from feature matches. Returns H matrix and inlier mask. Use H for difference heatmap (cv2.warpPerspective). Use mask for inlier/outlier classification.</reason>
+      </code>
+
+      <!-- OpenCV Visualization Functions -->
+      <code>
+        <path>opencv-python</path>
+        <kind>external library</kind>
+        <symbol>cv2.arrowedLine</symbol>
+        <lines>N/A</lines>
+        <reason>Draw motion vectors as arrows from baseline feature (x0,y0) to current feature (x1,y1). Color green for inliers, red for outliers.</reason>
+      </code>
+      <code>
+        <path>opencv-python</path>
+        <kind>external library</kind>
+        <symbol>cv2.warpPerspective</symbol>
+        <lines>N/A</lines>
+        <reason>Warp baseline frame using homography matrix for difference heatmap (AC5). Use to align baseline with current frame before computing pixel-wise difference.</reason>
+      </code>
+      <code>
+        <path>opencv-python</path>
+        <kind>external library</kind>
+        <symbol>cv2.applyColorMap</symbol>
+        <lines>N/A</lines>
+        <reason>Apply color map to difference image for heatmap visualization (COLORMAP_JET: blue for low diff, red for high diff).</reason>
+      </code>
+      <code>
+        <path>opencv-python</path>
+        <kind>external library</kind>
+        <symbol>cv2.addWeighted</symbol>
+        <lines>N/A</lines>
+        <reason>Overlay heatmap with 50% transparency on current frame (AC5).</reason>
+      </code>
+
+      <!-- Test Infrastructure -->
+      <code>
+        <path>tests/validation/test_comparison_tool_mode_a.py</path>
+        <kind>test reference</kind>
+        <symbol>Mode A test patterns</symbol>
+        <lines>1-381</lines>
+        <reason>Mode A tests show patterns for testing keyboard controls (mock cv2.waitKey), display functions, and CSV export. Adapt for Mode B testing (motion vector visualization, match quality metrics, heatmap generation).</reason>
+      </code>
+      <code>
+        <path>tests/validation/conftest.py</path>
+        <kind>test fixture</kind>
+        <symbol>pytest fixtures</symbol>
+        <lines>1-9</lines>
+        <reason>Test configuration. Simple fixture setup. Use for Mode B test fixtures.</reason>
+      </code>
+    </code>
+
+    <dependencies>
+      <python version=">=3.11">
+        <package>opencv-python>=4.12.0.88</package>
+        <package>opencv-contrib-python>=4.12.0.88</package>
+        <package>numpy (via opencv)</package>
+        <package>matplotlib==3.9.2 (for CSV export if needed)</package>
+        <package>psutil>=5.9.0</package>
+      </python>
+      <note>All dependencies already present in pyproject.toml. No new dependencies required for Mode B.</note>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <!-- Technical Constraints -->
+    - **New Tool File**: Create tools/validation/baseline_correspondence_tool.py (do NOT modify comparison_tool.py)
+    - **Baseline Pinning**: User presses 'b' key to pin current frame as baseline. All subsequent frames compared against this baseline (not frame-to-frame sequential comparison).
+    - **Match Correspondence Access**: Need to expose feature matches from MovementDetector after detect_movement(). Options: (1) add get_last_matches() method, or (2) store matches as instance variable like last_tx/last_ty.
+    - **Inlier/Outlier Classification**: Use inlier mask from homography/affine estimation (returned by cv2.findHomography or cv2.estimateAffinePartial2D).
+    - **Manual Stepping Only**: MUST wait indefinitely for user keypress (cv2.waitKey(0)), NO auto-advance
+    - **Frame Cache**: Load all images into memory for instant navigation (acceptable for 10-200 frame sequences)
+
+    <!-- Display Constraints -->
+    - **Motion Vector Display**: Draw cv2.arrowedLine from baseline feature location to current frame feature location. Green for inliers, red for outliers.
+    - **Baseline Thumbnail**: Display small (e.g., 160x120) baseline frame thumbnail in corner of main window.
+    - **Metrics Panel**: Top-right corner overlay showing: inlier count/total, inlier ratio %, RMSE, confidence score. Color-code: GREEN (>80%), ORANGE (50-80%), RED (<50%).
+    - **Minimum Matches**: Require at least 50 matches for visualization (show warning if below threshold).
+    - **Toggle Controls**: 'v' key toggles motion vectors on/off, 'h' key toggles heatmap on/off.
+
+    <!-- Heatmap Constraints (Optional AC5) -->
+    - **Warping**: Use cv2.warpPerspective with homography matrix from CSD detector to align baseline with current frame.
+    - **Difference Calculation**: cv2.absdiff on grayscale images (warped baseline vs current).
+    - **Color Map**: cv2.COLORMAP_JET (blue=low difference, red=high difference).
+    - **Transparency**: cv2.addWeighted with alpha=0.5 for 50% heatmap overlay.
+
+    <!-- Testing Constraints -->
+    - **Test Data**: Use sample_images/ for testing (50 images across 3 sites)
+    - **Test Coverage**: ≥85% coverage for new Mode B functions
+    - **Performance Target**: Frame stepping latency <100ms (instant response to keypress)
+    - **Integration Test**: End-to-end test with 10-frame sequence, verify motion vectors drawn, metrics displayed, heatmap toggles
+
+    <!-- Code Organization Constraints -->
+    - **Tool Naming**: baseline_correspondence_tool.py (clear distinction from comparison_tool.py)
+    - **Function Naming**: Prefix functions with mode_b_ or _mode_b for clarity if shared utilities added to comparison_tool.py
+    - **Argument Parser**: Similar structure to comparison_tool.py (--input-dir, --config, --output-dir)
+    - **Configuration**: Reuse existing config.json pattern from CameraMovementDetector (no new config format)
+  </constraints>
+
+  <interfaces>
+    <!-- CSD Detector API (Existing) -->
+    <interface>
+      <name>CameraMovementDetector.set_baseline</name>
+      <kind>method</kind>
+      <signature>set_baseline(image: np.ndarray) -> None</signature>
+      <path>src/camera_movement_detector.py:222-241</path>
+      <returns>None (sets internal baseline state)</returns>
+      <note>Call this when user presses 'b' key to pin baseline frame.</note>
+    </interface>
+    <interface>
+      <name>CameraMovementDetector.process_frame</name>
+      <kind>method</kind>
+      <signature>process_frame(image: np.ndarray, frame_id: Optional[str] = None) -> Dict[str, Any]</signature>
+      <path>src/camera_movement_detector.py:243-352</path>
+      <returns>Dict with keys: status, translation_displacement, confidence</returns>
+      <note>Processes current frame against baseline. Returns displacement and confidence. Need to extract match correspondences for visualization.</note>
+    </interface>
+
+    <!-- Match Correspondence Access (Potential New Interface) -->
+    <interface>
+      <name>MovementDetector.get_last_matches</name>
+      <kind>method (NEW - needs implementation)</kind>
+      <signature>get_last_matches() -> Tuple[List[Tuple], np.ndarray]</signature>
+      <path>src/movement_detector.py (NEW METHOD)</path>
+      <returns>Tuple of (matches, mask) where matches is List[(baseline_pt, current_pt)] and mask is inlier array</returns>
+      <note>Need to add this method to expose matches and inlier mask from last detect_movement() call. Alternative: store as instance variables like last_matches and last_mask.</note>
+    </interface>
+
+    <!-- Feature Access (Existing) -->
+    <interface>
+      <name>FeatureExtractor.baseline_features</name>
+      <kind>attribute</kind>
+      <signature>baseline_features: Optional[Tuple[List[cv2.KeyPoint], np.ndarray]]</signature>
+      <path>src/feature_extractor.py:49</path>
+      <returns>Tuple of (keypoints, descriptors) or None</returns>
+      <note>Access baseline keypoints for motion vector start points (x0, y0).</note>
+    </interface>
+
+    <!-- Motion Vector Drawing (New Function) -->
+    <interface>
+      <name>draw_motion_vectors</name>
+      <kind>function (NEW - needs implementation)</kind>
+      <signature>draw_motion_vectors(image: np.ndarray, matches: List, mask: np.ndarray, baseline_kp: List, current_kp: List) -> np.ndarray</signature>
+      <path>tools/validation/baseline_correspondence_tool.py (NEW)</path>
+      <returns>Annotated image with motion vector arrows</returns>
+      <note>Draw cv2.arrowedLine for each match. Use mask to determine inlier (green) vs outlier (red) coloring.</note>
+    </interface>
+
+    <!-- Heatmap Generation (New Function) -->
+    <interface>
+      <name>compute_diff_heatmap</name>
+      <kind>function (NEW - needs implementation)</kind>
+      <signature>compute_diff_heatmap(baseline: np.ndarray, current: np.ndarray, H: np.ndarray) -> np.ndarray</signature>
+      <path>tools/validation/baseline_correspondence_tool.py (NEW)</path>
+      <returns>Heatmap image (color-coded difference)</returns>
+      <note>Warp baseline with H, compute cv2.absdiff, apply cv2.COLORMAP_JET, return heatmap for overlay.</note>
+    </interface>
+
+    <!-- Metrics Overlay (New Function) -->
+    <interface>
+      <name>draw_match_quality_metrics</name>
+      <kind>function (NEW - needs implementation)</kind>
+      <signature>draw_match_quality_metrics(image: np.ndarray, inliers: int, total: int, rmse: float, confidence: float, threshold: float) -> np.ndarray</signature>
+      <path>tools/validation/baseline_correspondence_tool.py (NEW)</path>
+      <returns>Image with metrics panel overlay</returns>
+      <note>Draw top-right metrics panel. Show inlier count/total, ratio %, RMSE, confidence. Color-code based on ratio thresholds (80%, 50%).</note>
+    </interface>
+
+    <!-- OpenCV Functions -->
+    <interface>
+      <name>cv2.arrowedLine</name>
+      <kind>function</kind>
+      <signature>cv2.arrowedLine(img, pt1, pt2, color, thickness, tipLength)</signature>
+      <path>opencv-python (external)</path>
+      <returns>Modified image with arrow drawn</returns>
+      <note>Use for motion vector visualization. pt1=(x0,y0) baseline, pt2=(x1,y1) current.</note>
+    </interface>
+    <interface>
+      <name>cv2.warpPerspective</name>
+      <kind>function</kind>
+      <signature>cv2.warpPerspective(src, M, dsize)</signature>
+      <path>opencv-python (external)</path>
+      <returns>Warped image</returns>
+      <note>Warp baseline using homography matrix H for difference heatmap.</note>
+    </interface>
+    <interface>
+      <name>cv2.applyColorMap</name>
+      <kind>function</kind>
+      <signature>cv2.applyColorMap(src, colormap)</signature>
+      <path>opencv-python (external)</path>
+      <returns>Color-mapped image</returns>
+      <note>Apply COLORMAP_JET to difference image for heatmap.</note>
+    </interface>
+    <interface>
+      <name>cv2.addWeighted</name>
+      <kind>function</kind>
+      <signature>cv2.addWeighted(src1, alpha, src2, beta, gamma)</signature>
+      <path>opencv-python (external)</path>
+      <returns>Blended image</returns>
+      <note>Overlay heatmap on current frame with alpha=0.5 for 50% transparency.</note>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+**Testing Framework**: pytest with coverage plugin (pytest-cov)
+
+**Test Organization**:
+- Integration tests: tests/validation/test_baseline_correspondence_tool.py (NEW)
+- Unit tests: Extract testable functions from Mode B implementation
+- Test data: sample_images/ directories (50 images across 3 sites)
+
+**Naming Conventions**:
+- Test files: test_baseline_correspondence_tool.py
+- Test classes: TestModeBIntegration, TestMotionVectorVisualization, TestMatchQualityMetrics
+- Test methods: test_mode_b_{scenario} (e.g., test_mode_b_baseline_pinning)
+
+**Coverage Requirements**:
+- Overall Mode B functions: ≥85% coverage
+- draw_motion_vectors: ≥90% (core visualization)
+- compute_diff_heatmap: ≥85% (optional feature)
+- draw_match_quality_metrics: ≥90% (critical metrics display)
+
+**Testing Strategy**:
+- Mock cv2.waitKey() for automated testing (return key codes: b/v/h/→/←/q)
+- Use real sample images for frame processing (no mocking needed)
+- Mock cv2.imshow() and cv2.imwrite() to avoid window creation during tests
+- Use real CameraMovementDetector with real images for integration testing
+- Verify motion vector arrows drawn (check for cv2.arrowedLine calls)
+- Verify metrics panel overlay (check text positioning and color coding)
+- Verify heatmap generation (check warping and color mapping steps)
+
+**Mocking Strategy**:
+- Mock cv2.waitKey() to simulate: 'b' (pin baseline), 'v' (toggle vectors), 'h' (toggle heatmap), →/← (navigate), 'q' (quit)
+- Mock cv2.imshow() to capture displayed images for verification
+- No CSD detector mocking - use real detector with real images
+- Verify arrow colors: count green (inlier) vs red (outlier) arrows
+    </standards>
+
+    <locations>
+tests/validation/test_baseline_correspondence_tool.py (NEW)
+    </locations>
+
+    <ideas>
+**AC1: Baseline Pinning Mechanism**
+- Test 'b' key sets current frame as baseline
+- Verify baseline confirmation message displayed
+- Test baseline can be changed by pressing 'b' again on different frame
+- Verify baseline thumbnail displayed in corner (check image dimensions and placement)
+- Test baseline persistence across frame navigation (→/←)
+
+**AC2: Motion Vector Visualization**
+- Test motion vector drawing (verify cv2.arrowedLine called)
+- Verify arrow start points match baseline feature locations (x0, y0)
+- Verify arrow end points match current frame feature locations (x1, y1)
+- Test inlier arrows colored GREEN (check color tuple (0, 255, 0))
+- Test outlier arrows colored RED (check color tuple (0, 0, 255))
+- Test 'v' key toggles motion vectors on/off
+- Verify warning displayed when <50 matches available
+- Test motion vector display with 100+ matches (performance check)
+
+**AC3: Match Quality Metrics Display**
+- Test inlier count calculation (sum of inlier mask)
+- Test inlier ratio calculation (inliers / total matches)
+- Verify inlier ratio displayed as percentage (e.g., "67.6%")
+- Test RMSE extraction from CSD detector result
+- Test confidence score extraction from CSD detector result
+- Verify metrics panel overlaid on top-right corner
+- Test color coding: GREEN when ratio > 80%
+- Test color coding: ORANGE when ratio 50-80%
+- Test color coding: RED when ratio < 50%
+- Verify all metrics displayed: "142/210 inliers", "67.6%", "RMSE: 3.45px", "Conf: 0.85"
+
+**AC4: Manual Frame Stepping**
+- Test → key advances frame index by 1
+- Test ← key decreases frame index by 1
+- Test → key at last frame (should not advance beyond sequence)
+- Test ← key at first frame (should not go below 0)
+- Test 'q' key exits loop (verify clean exit)
+- Verify frame index displayed in status bar
+- Test baseline always compared against current frame (not sequential pairs)
+- Verify frame counter: "Frame 15/50"
+
+**AC5: Difference Heatmap (Optional)**
+- Test 'h' key toggles heatmap on/off
+- Verify homography computation from baseline to current
+- Test cv2.warpPerspective called with correct homography matrix
+- Verify pixel-wise difference calculation (cv2.absdiff)
+- Test color map application (cv2.COLORMAP_JET)
+- Verify blue for low difference, red for high difference
+- Test heatmap overlay with 50% transparency (cv2.addWeighted alpha=0.5)
+- Verify heatmap displayed only when 'h' toggled on
+
+**Integration Tests**:
+- End-to-end Mode B test: Load 10 frames, pin baseline (b), navigate (→→→), toggle vectors (v), toggle heatmap (h), quit (q)
+- Test with different baseline selection (frame 0 vs frame 5)
+- Verify motion vectors update correctly when baseline changes
+- Performance: Verify frame stepping <100ms latency
+- Test with low-match frame (<50 matches): verify warning displayed
+- Test with high-match frame (>200 matches): verify performance acceptable
+    </ideas>
+  </tests>
+</story-context>

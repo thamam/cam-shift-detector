@@ -54,6 +54,10 @@
 - Path: `bmad/bmm/workflows/3-solutioning/solutioning-gate-check/workflow.yaml`
 - Systematically validate that all planning and solutioning phases are complete and properly aligned before transitioning to Phase 4 implementation. Ensures PRD, architecture, and stories are cohesive with no gaps or contradictions.
 
+**code-review**
+- Path: `bmad/bmm/workflows/4-implementation/code-review/workflow.yaml`
+- Perform a Senior Developer code review on a completed story flagged Ready for Review, leveraging story-context, epic tech-spec, repo docs, MCP servers for latest best-practices, and web search as fallback. Appends structured review notes to the story.
+
 **correct-course**
 - Path: `bmad/bmm/workflows/4-implementation/correct-course/workflow.yaml`
 - Navigate significant changes during sprint execution by analyzing impact, proposing solutions, and routing for implementation
@@ -74,10 +78,6 @@
 - Path: `bmad/bmm/workflows/4-implementation/retrospective/workflow.yaml`
 - Run after epic completion to review overall success, extract lessons learned, and explore if new information emerged that might impact the next epic
 
-**review-story**
-- Path: `bmad/bmm/workflows/4-implementation/review-story/workflow.yaml`
-- Perform a Senior Developer Review on a completed story flagged Ready for Review, leveraging story-context, epic tech-spec, repo docs, MCP servers for latest best-practices, and web search as fallback. Appends structured review notes to the story.
-
 **sprint-planning**
 - Path: `bmad/bmm/workflows/4-implementation/sprint-planning/workflow.yaml`
 - Generate and manage the sprint status tracking file for Phase 4 implementation, extracting all epics and stories from epic files and tracking their status through the development lifecycle
@@ -88,43 +88,11 @@
 
 **story-done**
 - Path: `bmad/bmm/workflows/4-implementation/story-done/workflow.yaml`
-- Marks a story as done (DoD complete) and moves it from IN PROGRESS → DONE in the status file. Advances the story queue. Simple status-update workflow with no searching required.
+- Marks a story as done (DoD complete) and moves it from its current status → DONE in the status file. Advances the story queue. Simple status-update workflow with no searching required.
 
 **story-ready**
 - Path: `bmad/bmm/workflows/4-implementation/story-ready/workflow.yaml`
 - Marks a drafted story as ready for development and moves it from TODO → IN PROGRESS in the status file. Simple status-update workflow with no searching required.
-
-**testarch-atdd**
-- Path: `bmad/bmm/workflows/testarch/atdd/workflow.yaml`
-- Generate failing acceptance tests before implementation using TDD red-green-refactor cycle
-
-**testarch-automate**
-- Path: `bmad/bmm/workflows/testarch/automate/workflow.yaml`
-- Expand test automation coverage after implementation or analyze existing codebase to generate comprehensive test suite
-
-**testarch-ci**
-- Path: `bmad/bmm/workflows/testarch/ci/workflow.yaml`
-- Scaffold CI/CD quality pipeline with test execution, burn-in loops, and artifact collection
-
-**testarch-framework**
-- Path: `bmad/bmm/workflows/testarch/framework/workflow.yaml`
-- Initialize production-ready test framework architecture (Playwright or Cypress) with fixtures, helpers, and configuration
-
-**testarch-nfr**
-- Path: `bmad/bmm/workflows/testarch/nfr-assess/workflow.yaml`
-- Assess non-functional requirements (performance, security, reliability, maintainability) before release with evidence-based validation
-
-**testarch-test-design**
-- Path: `bmad/bmm/workflows/testarch/test-design/workflow.yaml`
-- Plan risk mitigation and test coverage strategy before development with risk assessment and prioritization
-
-**testarch-test-review**
-- Path: `bmad/bmm/workflows/testarch/test-review/workflow.yaml`
-- Review test quality using comprehensive knowledge base and best practices validation
-
-**testarch-trace**
-- Path: `bmad/bmm/workflows/testarch/trace/workflow.yaml`
-- Generate requirements-to-tests traceability matrix, analyze coverage, and make quality gate decision (PASS/CONCERNS/FAIL/WAIVED)
 
 **workflow-init**
 - Path: `bmad/bmm/workflows/workflow-status/init/workflow.yaml`
@@ -132,7 +100,7 @@
 
 **workflow-status**
 - Path: `bmad/bmm/workflows/workflow-status/workflow.yaml`
-- Lightweight status checker - answers 'what should I do now?' for any agent. Reads simple key-value status file for instant parsing. Use workflow-init for new projects.
+- Lightweight status checker - answers "what should I do now?" for any agent. Reads simple key-value status file for instant parsing. Use workflow-init for new projects.
 
 
 ## Execution

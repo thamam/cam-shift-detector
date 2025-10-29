@@ -295,17 +295,29 @@ def run_charuco_calibration_from_images(image_dir, detector, charuco_board, out_
 
 # ---------- Pose estimation ----------
 def estimate_pose_charuco(frame_gray, detector, charuco_board, K, dist):
-    # Create CharucoDetector for board detection
-    charuco_detector = cv.aruco.CharucoDetector(charuco_board)
+    # Handle both CharucoDetector and ArucoDetector
+    if hasattr(detector, 'detectBoard'):
+        # CharucoDetector - has detectBoard method
+        ch_corners, ch_ids, marker_corners, marker_ids = detector.detectBoard(frame_gray)
 
-    # Detect board and estimate pose
-    ch_corners, ch_ids, marker_corners, marker_ids = charuco_detector.detectBoard(frame_gray)
+        if ch_corners is None or ch_ids is None or len(ch_ids) < 6:
+            return None
 
-    if ch_corners is None or ch_ids is None or len(ch_ids) < 6:
-        return None
+        # Get board from detector
+        board = detector.getBoard()
+    else:
+        # ArucoDetector - create CharucoDetector from it for newer OpenCV API
+        # In OpenCV 4.7+, we need to use CharucoDetector
+        charuco_detector = cv.aruco.CharucoDetector(charuco_board)
+        ch_corners, ch_ids, marker_corners, marker_ids = charuco_detector.detectBoard(frame_gray)
+
+        if ch_corners is None or ch_ids is None or len(ch_ids) < 6:
+            return None
+
+        board = charuco_board
 
     # Get 3D object points for detected ChArUco corners
-    board_obj_points = charuco_board.getChessboardCorners()
+    board_obj_points = board.getChessboardCorners()
     obj_pts = []
     img_pts = []
     for i, corner_id in enumerate(ch_ids.flatten()):

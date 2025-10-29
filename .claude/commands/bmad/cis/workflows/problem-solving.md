@@ -1,3 +1,7 @@
+---
+description: 'Apply systematic problem-solving methodologies to crack complex challenges. This workflow guides through problem diagnosis, root cause analysis, creative solution generation, evaluation, and implementation planning using proven frameworks.'
+---
+
 # problem-solving
 
 IT IS CRITICAL THAT YOU FOLLOW THESE STEPS - while staying in character as the current agent persona you may have loaded:

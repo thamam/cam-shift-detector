@@ -1,0 +1,446 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>STAGE4</epicId>
+    <storyId>MODE-A</storyId>
+    <title>Mode A - 4-Image Comparison with Feature Overlays</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-10-28</generatedAt>
+    <updatedAt>2025-10-28</updatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/story-stage4-mode-a.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer debugging detector discrepancies</asA>
+    <iWant>a 4-image side-by-side view showing both ChArUco and CSD detectors with feature overlays</iWant>
+    <soThat>I can visually compare detection quality and identify displacement differences frame-by-frame</soThat>
+    <tasks>
+**Phase 1: Display Layout Modification (AC: #1)**
+- Modify tools/validation/comparison_tool.py display logic
+- Change from 2 windows to 4-quadrant single window
+- Add quadrant labels (detector type, frame type)
+- Implement synchronized frame loading for all 4 quadrants
+- Test layout with sample images
+
+**Phase 2: Manual Frame Control (AC: #2)**
+- Replace auto-loop with manual stepping logic
+- Implement keyboard event handler for →/← keys
+- Add frame index tracking and display
+- Implement frame cache for instant navigation
+- Test with 200-frame sequence
+
+**Phase 3: Feature Extraction & Visualization (AC: #3)**
+- Extract ChArUco corner coordinates from detection result
+- Extract ORB keypoint coordinates from CSD module
+- Implement draw_charuco_corners() function
+- Implement draw_orb_features() function
+- Add toggle mechanism (f key)
+- Test with various feature densities
+
+**Phase 4: Enhanced Metrics Calculation (AC: #4)**
+- Compute Δdx and Δdy from both detectors
+- Compute error magnitude
+- Implement color-coded display logic
+- Create metrics panel overlay
+- Update status bar with all metrics
+
+**Phase 5: Export Functionality (AC: #5)**
+- Implement CSV export with specified columns
+- Add keyboard handler for e key (export)
+- Add keyboard handler for s key (snapshot)
+- Implement PNG frame capture
+- Test export with multi-frame session
+
+**Phase 6: Testing & Validation**
+- Unit tests for feature extraction functions
+- Integration test with 50-frame sequence
+- Verify CSV format matches spec
+- Performance test: ensure <100ms frame step latency
+- Edge case testing: missing features, detection failures
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+**AC1: 4-Image Layout Display**
+- Top-left quadrant: Baseline frame with ChArUco corners overlay
+- Top-right quadrant: Baseline frame with ORB features overlay
+- Bottom-left quadrant: Current frame with ChArUco corners overlay
+- Bottom-right quadrant: Current frame with ORB features overlay
+- Each quadrant labeled with detector type and frame info
+- All quadrants synchronized to same baseline and current frame
+
+**AC2: Manual Frame Stepping Controls**
+- → key advances to next frame
+- ← key goes back to previous frame
+- q key quits and saves results
+- Frame stepping does NOT auto-advance (waits for user input)
+- Current frame index displayed in status bar
+- Smooth navigation through 10-200 frame sequences
+
+**AC3: Feature Visualization Overlays**
+- ChArUco corners marked with colored circles or crosses
+- ORB features marked with colored circles (size proportional to scale)
+- Toggle feature display with f key (show/hide)
+- Feature count displayed in each quadrant
+- Clear visual distinction between ChArUco and ORB markers
+
+**AC4: Enhanced Displacement Metrics**
+- Display ChArUco displacement: (dx_c, dy_c) in pixels
+- Display CSD displacement: (dx_s, dy_s) in pixels
+- Display displacement difference: Δdx = dx_s - dx_c, Δdy = dy_s - dy_c
+- Display error magnitude: √(Δdx² + Δdy²)
+- Color-code metrics: GREEN if error < threshold, RED otherwise
+- Metrics panel overlaid on bottom status bar
+
+**AC5: CSV Export**
+- Export button (e key) saves current session to CSV
+- CSV columns: frame_id, dx_charuco, dy_charuco, dx_csd, dy_csd, delta_dx, delta_dy, error_mag, inliers, total, rmse
+- CSV saved to output directory with timestamp
+- PNG snapshot saved alongside CSV (s key)
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <!-- Primary Requirements -->
+      <doc>
+        <path>docs/Stage_4_prompt.md</path>
+        <title>Stage 4 Interactive Debugging Tools Requirements</title>
+        <section>Section 3: Mode A - 4-Image Comparison</section>
+        <snippet>Original requirements for Mode A including 4-quadrant layout specification, manual frame stepping controls, feature overlay visualization (ChArUco corners + ORB features), enhanced displacement metrics (Δdx, Δdy, error magnitude), and CSV export format.</snippet>
+      </doc>
+
+      <!-- Epic Overview -->
+      <doc>
+        <path>docs/epic-stage4-debug-tools.md</path>
+        <title>Epic: Stage 4 Interactive Debugging Tools</title>
+        <section>Story 1: Mode A Overview</section>
+        <snippet>Epic-level context defining Mode A as 5-point story with 4-quadrant comparison view, manual stepping, and feature overlays. Total epic: 10 points across 3 stories (A/B/C).</snippet>
+      </doc>
+
+      <!-- Comparison Tool Documentation -->
+      <doc>
+        <path>tools/validation/README.md</path>
+        <title>ChArUco vs Cam-Shift Comparison Tool Documentation</title>
+        <section>Display Windows and Output Structure</section>
+        <snippet>Existing comparison tool documentation showing dual window pattern, status bar structure, keyboard controls, JSON log format, and MSE graph generation. Provides patterns to extend for 4-quadrant Mode A.</snippet>
+      </doc>
+
+      <!-- Related Story Contexts -->
+      <doc>
+        <path>docs/stories/story-comparison-tool-1.context.md</path>
+        <title>Story Context: Core Comparison Infrastructure</title>
+        <section>Artifacts and Interfaces</section>
+        <snippet>Story context for DualDetectorRunner infrastructure showing dataclass patterns, comparison metrics, and detector orchestration. Demonstrates story context structure and completeness standards.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/story-comparison-tool-2.context.md</path>
+        <title>Story Context: Tool Integration & Testing</title>
+        <section>Implementation and Testing Standards</section>
+        <snippet>Story context for comparison_tool.py showing CLI patterns, display window implementation, offline/online modes, and integration testing approach. Direct predecessor to Mode A enhancement.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <!-- Main File to Modify -->
+      <code>
+        <path>tools/validation/comparison_tool.py</path>
+        <kind>main executable</kind>
+        <symbol>comparison_tool (entire module)</symbol>
+        <lines>1-976</lines>
+        <reason>Primary file to modify for Mode A. Already contains offline/online modes with dual window display. Need to add mode-a option, create 4-quadrant layout, implement manual stepping loop, add feature visualization, and implement CSV export.</reason>
+      </code>
+
+      <!-- Infrastructure Modules (Story 1 - completed) -->
+      <code>
+        <path>validation/utilities/dual_detector_runner.py</path>
+        <kind>orchestration module</kind>
+        <symbol>DualDetectorRunner</symbol>
+        <lines>63-268</lines>
+        <reason>Provides detector orchestration with set_baseline() and process_frame() returning DualDetectionResult. Already used in comparison_tool.py. Contains displacement calculations for both detectors.</reason>
+      </code>
+      <code>
+        <path>validation/utilities/comparison_logger.py</path>
+        <kind>logging module</kind>
+        <symbol>ComparisonLogger</symbol>
+        <lines>1-244</lines>
+        <reason>Handles JSON logging with log_frame(), save_log(), and generate_mse_graph(). Already used in comparison_tool.py. Need to extend for Mode A CSV export with additional columns (delta_dx, delta_dy, error_mag).</reason>
+      </code>
+      <code>
+        <path>validation/utilities/comparison_metrics.py</path>
+        <kind>metrics module</kind>
+        <symbol>calculate_displacement_difference</symbol>
+        <lines>1-165</lines>
+        <reason>Provides comparison metric calculations. Already used by DualDetectorRunner. Contains calculate_displacement_difference() for error magnitude calculation.</reason>
+      </code>
+
+      <!-- Feature Extraction and Visualization -->
+      <code>
+        <path>src/feature_extractor.py</path>
+        <kind>detector module</kind>
+        <symbol>FeatureExtractor.extract_features</symbol>
+        <lines>60-148</lines>
+        <reason>Extracts ORB keypoints and descriptors. Returns List[cv2.KeyPoint] for visualization. Need to access keypoints from CameraMovementDetector for Mode A ORB feature overlay.</reason>
+      </code>
+      <code>
+        <path>src/camera_movement_detector.py</path>
+        <kind>detector API</kind>
+        <symbol>CameraMovementDetector</symbol>
+        <lines>19-352</lines>
+        <reason>Main CSD detector. Contains feature_extractor with keypoints. May need to expose get_last_keypoints() method for ORB visualization, or access via self.feature_extractor.baseline_features.</reason>
+      </code>
+
+      <!-- ChArUco Visualization Utilities -->
+      <code>
+        <path>tools/aruco/camshift_annotator.py</path>
+        <kind>utility module</kind>
+        <symbol>estimate_pose_charuco</symbol>
+        <lines>297-322</lines>
+        <reason>Returns rvec, tvec, n_corners. Already used by DualDetectorRunner. Need to extract corner coordinates for visualization. Can call charuco_detector.detectBoard() separately to get corner image coordinates.</reason>
+      </code>
+      <code>
+        <path>tools/aruco/camshift_annotator.py</path>
+        <kind>utility module</kind>
+        <symbol>draw_axes</symbol>
+        <lines>92-105</lines>
+        <reason>Shows cv2.drawFrameAxes() pattern for ChArUco pose visualization. Already used in existing comparison_tool.py. Reference for overlay patterns.</reason>
+      </code>
+
+      <!-- Display and Keyboard Control Patterns -->
+      <code>
+        <path>tools/validation/comparison_tool.py</path>
+        <kind>main executable</kind>
+        <symbol>run_offline_comparison</symbol>
+        <lines>440-610</lines>
+        <reason>Existing offline mode implementation. Shows frame loading, processing loop, display updates, and FPS calculation patterns. Reference for Mode A offline implementation.</reason>
+      </code>
+      <code>
+        <path>tools/validation/comparison_tool.py</path>
+        <kind>main executable</kind>
+        <symbol>create_dual_display</symbol>
+        <lines>111-168</lines>
+        <reason>Existing dual display function. Shows horizontal stacking pattern, status bar integration, and window layout. Extend pattern to 4-quadrant layout for Mode A.</reason>
+      </code>
+      <code>
+        <path>tools/validation/comparison_tool.py</path>
+        <kind>main executable</kind>
+        <symbol>draw_comparison_status_bar</symbol>
+        <lines>218-259</lines>
+        <reason>Existing status bar with metrics display. Shows color-coded status and controls hint pattern. Extend for Mode A enhanced metrics (Δdx, Δdy, error magnitude).</reason>
+      </code>
+
+      <!-- Test Infrastructure -->
+      <code>
+        <path>tests/validation/test_comparison_tool_integration.py</path>
+        <kind>test module</kind>
+        <symbol>TestOfflineModeIntegration</symbol>
+        <lines>1-450</lines>
+        <reason>Existing integration tests for comparison_tool.py. Shows testing patterns for CLI, frame processing, JSON output, and MSE graph generation. Extend for Mode A testing.</reason>
+      </code>
+      <code>
+        <path>tests/validation/conftest.py</path>
+        <kind>test fixture</kind>
+        <symbol>pytest fixtures</symbol>
+        <lines>1-9</lines>
+        <reason>Test configuration. Simple fixture setup (no cv2 mocking needed). Use for Mode A test fixtures.</reason>
+      </code>
+    </code>
+
+    <dependencies>
+      <python version=">=3.11">
+        <package>opencv-python>=4.12.0.88</package>
+        <package>opencv-contrib-python>=4.12.0.88</package>
+        <package>numpy (via opencv)</package>
+        <package>matplotlib==3.9.2 (already added in Story 1)</package>
+        <package>psutil>=5.9.0</package>
+      </python>
+      <note>All dependencies already present in pyproject.toml. No new dependencies required for Mode A.</note>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <!-- Technical Constraints -->
+    - **4-Quadrant Layout Requirement**: MUST display baseline/current × ChArUco/CSD in 2×2 grid within single window
+    - **Manual Stepping Only**: MUST wait indefinitely for user keypress (cv2.waitKey(0)), NO auto-advance
+    - **Frame Cache Performance**: Load all images into memory for instant navigation (acceptable for 10-200 frame sequences)
+    - **Feature Extraction Access**: Need to access ORB keypoints from CameraMovementDetector for visualization (may require exposing getter method)
+    - **ChArUco Corner Access**: Need to extract corner image coordinates from detectBoard() separately from estimate_pose_charuco()
+
+    <!-- Display Constraints -->
+    - **Quadrant Synchronization**: All 4 quadrants MUST show same baseline and current frame pair
+    - **Label Clarity**: Each quadrant MUST be clearly labeled (detector type + frame type)
+    - **Feature Toggle**: f key MUST toggle features on/off globally (affects all 4 quadrants)
+    - **Overlay Visibility**: Features MUST be visible with distinct colors (ChArUco corners vs ORB keypoints)
+
+    <!-- Metrics Constraints -->
+    - **Enhanced Displacement Display**: MUST show component-wise differences (Δdx, Δdy) not just magnitude
+    - **Error Magnitude Calculation**: sqrt(Δdx² + Δdy²) using displacement difference components
+    - **Color-Coded Metrics**: GREEN if error < threshold, RED otherwise (threshold from DualDetectorRunner)
+    - **Status Bar Integration**: Metrics MUST be overlaid on bottom status bar with frame info and controls
+
+    <!-- CSV Export Constraints -->
+    - **Column Specification**: frame_id, dx_charuco, dy_charuco, dx_csd, dy_csd, delta_dx, delta_dy, error_mag, inliers, total, rmse
+    - **Filename Convention**: {output_dir}/mode_a_session_{timestamp}.csv
+    - **Export Trigger**: e key exports CSV, s key saves PNG snapshot
+
+    <!-- Testing Constraints -->
+    - **Test Data**: Use sample_images/ for testing (50 images across 3 sites)
+    - **Test Coverage**: ≥85% coverage for new Mode A functions
+    - **Performance Target**: Frame stepping latency <100ms (instant response to keypress)
+    - **Integration Test**: End-to-end test with 10-frame sequence, verify CSV columns match spec
+
+    <!-- Code Organization Constraints -->
+    - **Function Naming**: Prefix Mode A functions with mode_a_ or _mode_a suffix for clarity
+    - **Argument Parser**: Add "mode-a" choice to --mode argument (alongside "offline", "online")
+    - **Configuration Reuse**: Use existing comparison_config.json (no new config file needed)
+  </constraints>
+
+  <interfaces>
+    <!-- DualDetectorRunner API (existing) -->
+    <interface>
+      <name>DualDetectorRunner.process_frame</name>
+      <kind>method</kind>
+      <signature>process_frame(image: np.ndarray, frame_id: Optional[str] = None) -> DualDetectionResult</signature>
+      <path>validation/utilities/dual_detector_runner.py:182-268</path>
+      <returns>DualDetectionResult with charuco_displacement_px, camshift_displacement_px, displacement_diff, agreement_status</returns>
+      <note>Already provides displacement values. For Mode A, need component-wise dx/dy instead of just magnitude.</note>
+    </interface>
+
+    <!-- Feature Access (potential new interface) -->
+    <interface>
+      <name>CameraMovementDetector.get_last_keypoints</name>
+      <kind>method (potential new)</kind>
+      <signature>get_last_keypoints() -> Optional[List[cv2.KeyPoint]]</signature>
+      <path>src/camera_movement_detector.py (NEW METHOD)</path>
+      <returns>List of ORB keypoints from last processed frame, or None</returns>
+      <note>May need to add this method to expose keypoints for visualization. Alternative: access self.feature_extractor.baseline_features directly.</note>
+    </interface>
+
+    <!-- ChArUco Corner Detection (existing) -->
+    <interface>
+      <name>cv2.aruco.CharucoDetector.detectBoard</name>
+      <kind>method</kind>
+      <signature>detectBoard(image) -> Tuple[charucoCorners, charucoIds, markerCorners, markerIds]</signature>
+      <path>opencv-contrib-python (external library)</path>
+      <returns>Tuple with charucoCorners (Nx2 array of corner coordinates), charucoIds, etc.</returns>
+      <note>Use to extract corner image coordinates for visualization (separate from estimate_pose_charuco).</note>
+    </interface>
+
+    <!-- OpenCV Drawing Functions -->
+    <interface>
+      <name>cv2.circle</name>
+      <kind>function</kind>
+      <signature>cv2.circle(img, center, radius, color, thickness)</signature>
+      <path>opencv-python (external library)</path>
+      <returns>Modified image with drawn circle</returns>
+      <note>Use for drawing ChArUco corners and ORB keypoints on frames.</note>
+    </interface>
+
+    <interface>
+      <name>cv2.drawKeypoints</name>
+      <kind>function</kind>
+      <signature>cv2.drawKeypoints(image, keypoints, outImage, color, flags)</signature>
+      <path>opencv-python (external library)</path>
+      <returns>Image with drawn keypoints</returns>
+      <note>Alternative to cv2.circle for ORB visualization. Use cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS to show scale/orientation.</note>
+    </interface>
+
+    <!-- CSV Export -->
+    <interface>
+      <name>csv.writer</name>
+      <kind>class</kind>
+      <signature>csv.writer(file, delimiter=',')</signature>
+      <path>csv (Python standard library)</path>
+      <returns>CSV writer object</returns>
+      <note>Use for Mode A CSV export. Write header row then data rows with frame_id, displacements, deltas, error_mag, inliers, total, rmse.</note>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+**Testing Framework**: pytest with coverage plugin (pytest-cov)
+
+**Test Organization**:
+- Integration tests: tests/validation/test_comparison_tool_mode_a_integration.py (NEW)
+- Unit tests: Extract testable functions from Mode A implementation
+- Test data: sample_images/ directories (50 images across 3 sites)
+
+**Naming Conventions**:
+- Test files: test_comparison_tool_mode_a_integration.py
+- Test classes: TestModeAIntegration
+- Test methods: test_mode_a_{scenario} (e.g., test_mode_a_4quadrant_layout)
+
+**Coverage Requirements**:
+- Overall Mode A functions: ≥85% coverage
+- create_4quadrant_display_mode_a: ≥90% (core display logic)
+- run_offline_mode_a: ≥80% (UI loop harder to test)
+- Feature visualization functions: ≥90%
+
+**Testing Strategy**:
+- Mock cv2.waitKey() for automated testing (return key codes for navigation)
+- Use real sample images for frame processing (no mocking needed)
+- Verify CSV output structure and column presence
+- Verify PNG snapshot file creation
+- Performance test: measure frame stepping latency
+
+**Mocking Strategy**:
+- Mock cv2.waitKey() to simulate user key presses (→/←/f/e/s/q)
+- Mock cv2.imshow() and cv2.imwrite() to avoid window creation during tests
+- Use real DualDetectorRunner with real images for integration testing
+- No cv2 image loading mocking needed (opencv-python available in test environment)
+    </standards>
+
+    <locations>
+tests/validation/test_comparison_tool_mode_a_integration.py (NEW)
+    </locations>
+
+    <ideas>
+**AC1: 4-Image Layout Display**
+- Test create_4quadrant_display_mode_a() creates correct 2×2 grid layout
+- Verify all 4 quadrants have same dimensions
+- Verify quadrant labels are present and correct (detector type + frame type)
+- Test with baseline and current frames (different images)
+- Verify baseline quadrants show same frame in both ChArUco and CSD views
+- Verify current quadrants show same frame in both ChArUco and CSD views
+
+**AC2: Manual Frame Stepping Controls**
+- Test → key advances frame index by 1 (mock cv2.waitKey() return 83 or ord('d'))
+- Test ← key decreases frame index by 1 (mock cv2.waitKey() return 81 or ord('a'))
+- Test → key at last frame (should not advance beyond sequence)
+- Test ← key at first frame (should not go below 0)
+- Test q key exits loop (verify clean exit)
+- Verify frame counter displays correct index
+- Test frame stepping latency <100ms (performance requirement)
+
+**AC3: Feature Visualization Overlays**
+- Test ChArUco corner extraction from detectBoard()
+- Test ORB keypoint access from CameraMovementDetector
+- Verify draw_charuco_corners() marks corners with colored circles/crosses
+- Verify draw_orb_features() marks keypoints with colored circles
+- Test f key toggles show_features flag
+- Verify feature count displayed in each quadrant
+- Test visual distinction between ChArUco and ORB markers (different colors)
+
+**AC4: Enhanced Displacement Metrics**
+- Test Δdx and Δdy calculation from dx_charuco, dy_charuco, dx_csd, dy_csd
+- Verify error magnitude calculation: sqrt(Δdx² + Δdy²)
+- Test color coding: GREEN when error < threshold, RED when error ≥ threshold
+- Verify metrics panel overlay on status bar
+- Test status bar displays all metrics (dx_c, dy_c, dx_s, dy_s, Δdx, Δdy, error_mag)
+
+**AC5: CSV Export**
+- Test e key triggers CSV export (mock key press)
+- Verify CSV file created with correct filename pattern
+- Verify CSV header: frame_id, dx_charuco, dy_charuco, dx_csd, dy_csd, delta_dx, delta_dy, error_mag, inliers, total, rmse
+- Verify CSV contains correct number of rows (one per logged frame)
+- Test s key saves PNG snapshot (verify file created)
+- Verify PNG filename includes frame indices and timestamp
+
+**Integration Tests**:
+- End-to-end Mode A test: Load 10 frames, simulate navigation (→→→←→), toggle features (f), export (e), snapshot (s), quit (q)
+- Verify JSON log structure (if using ComparisonLogger)
+- Verify CSV export matches spec
+- Verify PNG snapshot file exists
+- Performance: Verify frame stepping <100ms latency
+    </ideas>
+  </tests>
+</story-context>

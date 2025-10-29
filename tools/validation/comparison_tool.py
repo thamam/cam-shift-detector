@@ -30,11 +30,12 @@ Usage:
 """
 
 import argparse
+import csv
 import json
 import sys
 import time
 from pathlib import Path
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, List
 import logging
 
 # Add project root to Python path for imports
@@ -77,6 +78,11 @@ Examples:
     %(prog)s --mode online --camera-id 0 \\
         --camera-yaml camera.yaml --charuco-config comparison_config.json \\
         --camshift-config config.json --output-dir comparison_results
+
+  Online Mode A (live camera, 4-quadrant, 1 Hz):
+    %(prog)s --mode online-mode-a --camera-id 2 --fps 1.0 \\
+        --camera-yaml camera.yaml --charuco-config comparison_config.json \\
+        --camshift-config config.json --output-dir mode_a_live_results
 """
     )
 
@@ -84,9 +90,9 @@ Examples:
     parser.add_argument(
         "--mode",
         type=str,
-        choices=["offline", "online"],
+        choices=["offline", "online", "mode-a", "online-mode-a"],
         required=True,
-        help="Operation mode: 'offline' for batch processing, 'online' for live camera"
+        help="Operation mode: 'offline' for batch processing, 'online' for live camera, 'mode-a' for 4-quadrant manual stepping, 'online-mode-a' for live camera with 4-quadrant display"
     )
     parser.add_argument(
         "--camera-yaml",
@@ -126,6 +132,12 @@ Examples:
         type=int,
         default=0,
         help="Camera device ID (default: 0, used for online mode)"
+    )
+    parser.add_argument(
+        "--fps",
+        type=float,
+        default=None,
+        help="Target frame rate for online-mode-a (e.g., 1.0 for 1 Hz). If not specified, runs as fast as possible."
     )
 
     # Optional display arguments
@@ -257,6 +269,284 @@ def create_display_windows(
     combined = np.vstack([combined_top, status_bar])
 
     return combined
+
+
+def create_4quadrant_display_mode_a(
+    baseline_frame: np.ndarray,
+    current_frame: np.ndarray,
+    result: DualDetectionResult,
+    config: Dict[str, Any],
+    frame_idx: int,
+    total_frames: int,
+    fps: float,
+    show_features: bool = True,
+    charuco_detector=None,
+    K=None,
+    dist=None,
+    detector_runner=None
+) -> np.ndarray:
+    """Create 4-quadrant Mode A display layout.
+
+    Layout:
+    ┌────────────────────┬────────────────────┐
+    │ Baseline ChArUco   │ Baseline CSD (ORB) │
+    │ (Top-Left)         │ (Top-Right)        │
+    ├────────────────────┼────────────────────┤
+    │ Current ChArUco    │ Current CSD (ORB)  │
+    │ (Bottom-Left)      │ (Bottom-Right)     │
+    └────────────────────┴────────────────────┘
+
+    Args:
+        baseline_frame: Baseline image
+        current_frame: Current frame image
+        result: DualDetectionResult from process_frame()
+        config: Display configuration
+        frame_idx: Current frame index
+        total_frames: Total number of frames
+        fps: Current frames per second
+        show_features: Whether to draw feature overlays
+        charuco_detector: ChArUco detector instance (for feature visualization)
+        K: Camera intrinsics matrix (for feature visualization)
+        dist: Distortion coefficients (for feature visualization)
+        detector_runner: DualDetectorRunner instance (for ORB feature visualization)
+
+    Returns:
+        Combined 4-quadrant display image with status bar
+    """
+    # Get display settings
+    display_settings = config.get("display_settings", {})
+    quad_width = display_settings.get("window_width", 640)
+    quad_height = display_settings.get("window_height", 480)
+
+    # Resize all frames to quadrant size
+    baseline_resized = cv.resize(baseline_frame, (quad_width, quad_height))
+    current_resized = cv.resize(current_frame, (quad_width, quad_height))
+
+    # Create four quadrants with feature visualization support
+    baseline_charuco = annotate_mode_a_frame(
+        baseline_resized.copy(), result, "Baseline - ChArUco", True, show_features,
+        charuco_detector=charuco_detector, K=K, dist=dist, detector_runner=detector_runner
+    )
+    baseline_csd = annotate_mode_a_frame(
+        baseline_resized.copy(), result, "Baseline - CSD (ORB)", False, show_features,
+        charuco_detector=charuco_detector, K=K, dist=dist, detector_runner=detector_runner
+    )
+    current_charuco = annotate_mode_a_frame(
+        current_resized.copy(), result, "Current - ChArUco", True, show_features,
+        charuco_detector=charuco_detector, K=K, dist=dist, detector_runner=detector_runner
+    )
+    current_csd = annotate_mode_a_frame(
+        current_resized.copy(), result, "Current - CSD (ORB)", False, show_features,
+        charuco_detector=charuco_detector, K=K, dist=dist, detector_runner=detector_runner
+    )
+
+    # Combine into 2x2 grid
+    top_row = np.hstack([baseline_charuco, baseline_csd])
+    bottom_row = np.hstack([current_charuco, current_csd])
+    quad_display = np.vstack([top_row, bottom_row])
+
+    # Create status bar with enhanced metrics
+    status_bar = draw_mode_a_status_bar(quad_width * 2, result, frame_idx, total_frames, fps)
+
+    # Combine quadrants with status bar
+    combined = np.vstack([quad_display, status_bar])
+
+    return combined
+
+
+def draw_charuco_corners(frame: np.ndarray, charuco_detector, K: np.ndarray, dist: np.ndarray) -> Tuple[np.ndarray, int]:
+    """Draw ChArUco corners on frame.
+
+    Args:
+        frame: Input frame (BGR)
+        charuco_detector: ChArUco detector instance
+        K: Camera intrinsics matrix
+        dist: Distortion coefficients
+
+    Returns:
+        Tuple of (annotated frame, corner count)
+    """
+    annotated = frame.copy()
+    frame_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY) if len(frame.shape) == 3 else frame
+
+    # Detect ChArUco board
+    charuco_corners, charuco_ids, _, _ = charuco_detector.detectBoard(frame_gray)
+
+    corner_count = 0
+    if charuco_corners is not None and len(charuco_corners) > 0:
+        corner_count = len(charuco_corners)
+        # Draw corners as cyan circles with cross marks
+        for corner in charuco_corners:
+            pt = tuple(corner[0].astype(int))
+            cv.circle(annotated, pt, 5, (255, 255, 0), 2)  # Cyan circle
+            cv.drawMarker(annotated, pt, (255, 255, 0), cv.MARKER_CROSS, 10, 1)  # Cyan cross
+
+    return annotated, corner_count
+
+
+def draw_orb_features(frame: np.ndarray, detector_runner: 'DualDetectorRunner') -> Tuple[np.ndarray, int]:
+    """Draw ORB features from CSD detector on frame.
+
+    Args:
+        frame: Input frame (BGR)
+        detector_runner: DualDetectorRunner instance with access to CSD detector
+
+    Returns:
+        Tuple of (annotated frame, feature count)
+    """
+    annotated = frame.copy()
+
+    # Access baseline features from CSD detector
+    feature_extractor = detector_runner.camshift_detector.feature_extractor
+    baseline_features = feature_extractor.baseline_features
+
+    feature_count = 0
+    if baseline_features is not None:
+        keypoints, descriptors = baseline_features
+        if keypoints:
+            feature_count = len(keypoints)
+            # Draw keypoints as green circles with size proportional to scale
+            for kp in keypoints:
+                pt = tuple(map(int, kp.pt))
+                radius = int(kp.size / 2)
+                cv.circle(annotated, pt, max(radius, 3), (0, 255, 0), 1)  # Green circle
+                cv.circle(annotated, pt, 2, (0, 255, 0), -1)  # Green center dot
+
+    return annotated, feature_count
+
+
+def annotate_mode_a_frame(
+    frame: np.ndarray,
+    result: DualDetectionResult,
+    label: str,
+    is_charuco: bool,
+    show_features: bool,
+    charuco_detector=None,
+    K=None,
+    dist=None,
+    detector_runner=None
+) -> np.ndarray:
+    """Annotate frame for Mode A display.
+
+    Args:
+        frame: Frame to annotate
+        result: DualDetectionResult
+        label: Quadrant label
+        is_charuco: True for ChArUco, False for CSD
+        show_features: Whether to draw feature overlays
+        charuco_detector: ChArUco detector instance (for ChArUco visualization)
+        K: Camera intrinsics matrix (for ChArUco visualization)
+        dist: Distortion coefficients (for ChArUco visualization)
+        detector_runner: DualDetectorRunner instance (for ORB visualization)
+
+    Returns:
+        Annotated frame
+    """
+    annotated = frame.copy()
+
+    # Draw features if enabled
+    feature_count = 0
+    if show_features:
+        if is_charuco and charuco_detector is not None and K is not None and dist is not None:
+            annotated, feature_count = draw_charuco_corners(annotated, charuco_detector, K, dist)
+        elif not is_charuco and detector_runner is not None:
+            annotated, feature_count = draw_orb_features(annotated, detector_runner)
+
+    # Add quadrant label at top
+    cv.putText(annotated, label, (10, 25), cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
+    if is_charuco:
+        # ChArUco metrics
+        disp_text = f"Disp: {result.charuco_displacement_px:.2f}px" if not np.isnan(result.charuco_displacement_px) else "Disp: N/A"
+        status_text = "DETECTED" if result.charuco_detected else "NOT DETECTED"
+        status_color = (0, 255, 0) if result.charuco_detected else (0, 0, 255)
+        conf_text = f"Conf: {result.charuco_confidence:.0f}" if not np.isnan(result.charuco_confidence) else "Conf: N/A"
+
+        cv.putText(annotated, disp_text, (10, 50), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+        cv.putText(annotated, status_text, (10, 70), cv.FONT_HERSHEY_SIMPLEX, 0.5, status_color, 1)
+        cv.putText(annotated, conf_text, (10, 90), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+
+        # Display feature count
+        if show_features:
+            feature_text = f"Features: {feature_count}"
+            cv.putText(annotated, feature_text, (10, 110), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 1)
+    else:
+        # CSD metrics
+        disp_text = f"Disp: {result.camshift_displacement_px:.2f}px" if not np.isnan(result.camshift_displacement_px) else "Disp: N/A"
+        status_text = result.camshift_status
+        status_color = (0, 255, 0) if result.camshift_status == "VALID" else (0, 165, 255)
+        conf_text = f"Conf: {result.camshift_confidence:.2f}" if not np.isnan(result.camshift_confidence) else "Conf: N/A"
+
+        cv.putText(annotated, disp_text, (10, 50), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+        cv.putText(annotated, status_text, (10, 70), cv.FONT_HERSHEY_SIMPLEX, 0.5, status_color, 1)
+        cv.putText(annotated, conf_text, (10, 90), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+
+        # Display feature count
+        if show_features:
+            feature_text = f"Features: {feature_count}"
+            cv.putText(annotated, feature_text, (10, 110), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+
+    return annotated
+
+
+def draw_mode_a_status_bar(
+    width: int,
+    result: DualDetectionResult,
+    frame_idx: int,
+    total_frames: int,
+    fps: float
+) -> np.ndarray:
+    """Draw Mode A status bar with enhanced displacement metrics.
+
+    Args:
+        width: Status bar width
+        result: DualDetectionResult
+        frame_idx: Current frame index
+        total_frames: Total number of frames
+        fps: Current FPS
+
+    Returns:
+        Status bar image
+    """
+    status_height = 120
+    status_bar = np.zeros((status_height, width, 3), dtype=np.uint8)
+
+    # Enhanced displacement metrics with component-wise differences
+    if not np.isnan(result.charuco_dx) and not np.isnan(result.camshift_dx):
+        # Calculate component-wise differences: Δdx, Δdy
+        delta_dx = result.camshift_dx - result.charuco_dx
+        delta_dy = result.camshift_dy - result.charuco_dy
+
+        # Calculate error magnitude: √(Δdx² + Δdy²)
+        error_mag = np.sqrt(delta_dx**2 + delta_dy**2)
+        threshold_px = result.threshold_px
+
+        # Color based on threshold
+        metric_color = (0, 255, 0) if error_mag <= threshold_px else (0, 0, 255)
+
+        # Line 1: Component displacements
+        disp_text = f"ChArUco: ({result.charuco_dx:.2f}, {result.charuco_dy:.2f})px  |  CSD: ({result.camshift_dx:.2f}, {result.camshift_dy:.2f})px"
+        cv.putText(status_bar, disp_text, (20, 25), cv.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
+
+        # Line 2: Differences and error magnitude
+        diff_text = f"Δdx={delta_dx:.2f}px, Δdy={delta_dy:.2f}px  |  Error: {error_mag:.2f}px"
+        cv.putText(status_bar, diff_text, (20, 50), cv.FONT_HERSHEY_SIMPLEX, 0.6, metric_color, 2)
+
+        # Line 3: Threshold
+        threshold_text = f"Threshold: {threshold_px:.2f}px  |  Status: {'PASS' if error_mag <= threshold_px else 'FAIL'}"
+        cv.putText(status_bar, threshold_text, (20, 75), cv.FONT_HERSHEY_SIMPLEX, 0.6, metric_color, 1)
+    else:
+        cv.putText(status_bar, "Comparison: N/A (ChArUco not detected)", (20, 30), cv.FONT_HERSHEY_SIMPLEX, 0.7, (128, 128, 128), 2)
+
+    # Frame info
+    frame_text = f"Frame: {frame_idx + 1}/{total_frames} | FPS: {fps:.1f}"
+    cv.putText(status_bar, frame_text, (20, 100), cv.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 1)
+
+    # Controls hint
+    controls_text = "Controls: [->] Next | [<-] Prev | [f] Toggle Features | [e] Export | [s] Snapshot | [q] Quit"
+    cv.putText(status_bar, controls_text, (20, 115), cv.FONT_HERSHEY_SIMPLEX, 0.5, (150, 150, 150), 1)
+
+    return status_bar
 
 
 def annotate_charuco_frame(frame: np.ndarray, result: DualDetectionResult) -> np.ndarray:
@@ -493,6 +783,157 @@ def run_offline_comparison(args: argparse.Namespace, config: Dict[str, Any]) -> 
     logger.info("🎉 Offline comparison complete!")
 
 
+def run_offline_mode_a(args: argparse.Namespace, config: Dict[str, Any]) -> None:
+    """Run offline Mode A (4-quadrant comparison with manual stepping).
+
+    Args:
+        args: Parsed command-line arguments
+        config: ChArUco configuration
+    """
+    logger.info("🎬 Starting Mode A: 4-Quadrant Comparison (Manual Stepping)")
+
+    # Create output directory
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Initialize DualDetectorRunner
+    charuco_board = config["charuco_board"]
+    comparison_settings = config["comparison_settings"]
+
+    runner = DualDetectorRunner(
+        camera_yaml_path=args.camera_yaml,
+        camshift_config_path=args.camshift_config,
+        charuco_squares_x=charuco_board["squares_x"],
+        charuco_squares_y=charuco_board["squares_y"],
+        charuco_square_len_m=charuco_board["square_len_m"],
+        charuco_marker_len_m=charuco_board["marker_len_m"],
+        charuco_dict_name=charuco_board["dict_name"],
+        z_distance_m=comparison_settings["default_z_distance_m"]
+    )
+
+    # Initialize ComparisonLogger
+    session_name = f"mode_a_{Path(args.input_dir).name}"
+    logger_obj = ComparisonLogger(output_dir=str(output_dir), session_name=session_name)
+
+    # Load all images (sorted)
+    input_path = Path(args.input_dir)
+    image_files = sorted(input_path.glob("*.jpg")) + sorted(input_path.glob("*.png"))
+
+    if not image_files:
+        logger.error(f"No images found in {args.input_dir}")
+        sys.exit(1)
+
+    logger.info(f"📁 Found {len(image_files)} images")
+
+    # Load and cache all images
+    logger.info("📦 Loading images into memory...")
+    images = []
+    for img_path in image_files:
+        img = cv.imread(str(img_path))
+        if img is not None:
+            images.append((img, img_path.name))
+        else:
+            logger.warning(f"Skipping unreadable image: {img_path}")
+
+    if not images:
+        logger.error("No valid images loaded")
+        sys.exit(1)
+
+    logger.info(f"✅ Loaded {len(images)} images")
+
+    # Set baseline from first image
+    logger.info("🎯 Setting baseline from first image...")
+    baseline_image, baseline_name = images[0]
+
+    if not runner.set_baseline(baseline_image):
+        logger.error("❌ Failed to set baseline (ChArUco board not detected)")
+        sys.exit(1)
+
+    logger.info("✅ Baseline set successfully")
+    logger.info("📝 Controls: [→] Next | [←] Prev | [f] Toggle Features | [e] Export | [s] Snapshot | [q] Quit")
+
+    # Manual stepping loop
+    frame_idx = 0
+    show_features = True
+    frame_times = []
+
+    while True:
+        frame_start = time.time()
+
+        # Get current frame
+        current_image, current_name = images[frame_idx]
+
+        # Process frame
+        result = runner.process_frame(current_image, frame_id=current_name)
+
+        # Log result
+        logger_obj.log_frame(result)
+
+        # Calculate FPS
+        frame_times.append(time.time() - frame_start)
+        recent_fps = 1.0 / np.mean(frame_times[-30:]) if frame_times else 0.0
+
+        # Create 4-quadrant display with feature visualization
+        combined_display = create_4quadrant_display_mode_a(
+            baseline_frame=baseline_image,
+            current_frame=current_image,
+            result=result,
+            config=config,
+            frame_idx=frame_idx,
+            total_frames=len(images),
+            fps=recent_fps,
+            show_features=show_features,
+            charuco_detector=runner.charuco_detector,
+            K=runner.K,
+            dist=runner.dist,
+            detector_runner=runner
+        )
+
+        # Display
+        cv.imshow("Mode A: 4-Quadrant Comparison", combined_display)
+
+        # Wait for key press (0 = wait indefinitely)
+        key = cv.waitKey(0) & 0xFF
+
+        # Handle keyboard controls
+        if key == 83 or key == ord('d'):  # Right arrow or 'd'
+            frame_idx = min(frame_idx + 1, len(images) - 1)
+        elif key == 81 or key == ord('a'):  # Left arrow or 'a'
+            frame_idx = max(frame_idx - 1, 0)
+        elif key == ord('f'):
+            show_features = not show_features
+            logger.info(f"Feature display: {'ON' if show_features else 'OFF'}")
+        elif key == ord('e'):
+            # Export CSV
+            csv_path = logger_obj.save_csv()
+            logger.info(f"📊 Exported CSV: {csv_path}")
+        elif key == ord('s'):
+            # Save snapshot
+            snapshot_path = output_dir / f"snapshot_frame_{frame_idx:04d}.png"
+            cv.imwrite(str(snapshot_path), combined_display)
+            logger.info(f"📸 Snapshot saved: {snapshot_path}")
+        elif key == ord('q'):
+            logger.info("⏹️  User requested quit")
+            break
+
+    # Close display windows
+    cv.destroyAllWindows()
+
+    # Save final results
+    logger.info("💾 Saving final results...")
+    log_path = logger_obj.save_log()
+    logger.info(f"   Log saved: {log_path}")
+
+    # Generate MSE graph
+    try:
+        graph_path = logger_obj.generate_mse_graph()
+        logger.info(f"   MSE graph saved: {graph_path}")
+    except ValueError as e:
+        logger.warning(f"   MSE graph generation failed: {e}")
+
+    logger.info("🎉 Mode A session complete!")
+
+
 def run_online_comparison(args: argparse.Namespace, config: Dict[str, Any]) -> None:
     """Run online comparison mode (live camera).
 
@@ -640,6 +1081,298 @@ def run_online_comparison(args: argparse.Namespace, config: Dict[str, Any]) -> N
     logger.info("🎉 Online comparison complete!")
 
 
+def run_online_mode_a(args: argparse.Namespace, config: Dict[str, Any]) -> None:
+    """Run online Mode A (live camera with 4-quadrant display).
+
+    Args:
+        args: Parsed command-line arguments
+        config: ChArUco configuration
+    """
+    logger.info("🎬 Starting Online Mode A: Live Camera 4-Quadrant Comparison")
+
+    # Create output directory
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Initialize DualDetectorRunner
+    charuco_board = config["charuco_board"]
+    comparison_settings = config["comparison_settings"]
+
+    runner = DualDetectorRunner(
+        camera_yaml_path=args.camera_yaml,
+        camshift_config_path=args.camshift_config,
+        charuco_squares_x=charuco_board["squares_x"],
+        charuco_squares_y=charuco_board["squares_y"],
+        charuco_square_len_m=charuco_board["square_len_m"],
+        charuco_marker_len_m=charuco_board["marker_len_m"],
+        charuco_dict_name=charuco_board["dict_name"],
+        z_distance_m=comparison_settings["default_z_distance_m"]
+    )
+
+    # Initialize ComparisonLogger
+    session_name = f"online_mode_a_{int(time.time())}"
+    logger_obj = ComparisonLogger(output_dir=str(output_dir), session_name=session_name)
+
+    # Open camera
+    logger.info(f"📹 Opening camera {args.camera_id}...")
+    cap = cv.VideoCapture(args.camera_id)
+    if not cap.isOpened():
+        logger.error(f"❌ Failed to open camera {args.camera_id}")
+        sys.exit(1)
+
+    logger.info("✅ Camera opened successfully")
+
+    # Calculate frame delay for target FPS
+    target_fps = args.fps if args.fps else None
+    frame_delay = 1.0 / target_fps if target_fps else 0.0
+
+    if target_fps:
+        logger.info(f"🎯 Target frame rate: {target_fps} Hz ({frame_delay:.2f}s between frames)")
+    else:
+        logger.info("🎯 Running at maximum camera frame rate")
+
+    logger.info("📝 Instructions:")
+    logger.info("   Step 1: Press 'b' to set ChArUco baseline")
+    logger.info("   Step 2: Select ROI for CSD detector")
+    logger.info("   Live Mode:")
+    logger.info("   [b] - Set/update baseline")
+    logger.info("   [f] - Toggle feature display")
+    logger.info("   [e] - Export CSV")
+    logger.info("   [s] - Save snapshot")
+    logger.info("   [q] - Quit")
+
+    # Create ChArUco detector for baseline detection and feature visualization
+    charuco_detector = cv.aruco.CharucoDetector(
+        cv.aruco.CharucoBoard(
+            (charuco_board["squares_x"], charuco_board["squares_y"]),
+            charuco_board["square_len_m"],
+            charuco_board["marker_len_m"],
+            cv.aruco.getPredefinedDictionary(getattr(cv.aruco, charuco_board["dict_name"]))
+        )
+    )
+
+    # Step 1: Wait for ChArUco baseline
+    charuco_baseline_set = False
+    baseline_frame = None
+    show_features = True
+
+    logger.info("📍 Step 1/2: Set ChArUco baseline...")
+
+    while not charuco_baseline_set:
+        ret, frame = cap.read()
+        if not ret:
+            logger.error("❌ Failed to read from camera")
+            cap.release()
+            sys.exit(1)
+
+        # Display instructions
+        display_frame = frame.copy()
+        cv.putText(display_frame, "Step 1: Press 'b' to set ChArUco baseline, 'q' to quit",
+                   (10, 30), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+        cv.imshow("Online Mode A: 4-Quadrant Comparison", display_frame)
+
+        key = cv.waitKey(30) & 0xFF
+        if key == ord('b'):
+            # Detect ChArUco board to validate
+            logger.info("🎯 Detecting ChArUco baseline...")
+
+            # Convert to grayscale
+            if len(frame.shape) == 3:
+                frame_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+            else:
+                frame_gray = frame
+
+            # Detect ChArUco
+            from tools.aruco.camshift_annotator import estimate_pose_charuco
+            pose_result = estimate_pose_charuco(
+                frame_gray,
+                charuco_detector,
+                config["charuco_board"],
+                runner.K,
+                runner.dist
+            )
+
+            if pose_result is not None:
+                rvec, tvec, n_corners = pose_result
+                runner.tvec_baseline = tvec
+                logger.info(f"✅ ChArUco baseline detected ({n_corners} corners)")
+                charuco_baseline_set = True
+                baseline_frame = frame.copy()
+            else:
+                logger.warning("❌ ChArUco baseline failed (board not detected), try again")
+        elif key == ord('q'):
+            logger.info("⏹️  User quit before setting baseline")
+            cap.release()
+            cv.destroyAllWindows()
+            return
+
+    # Step 2: Interactive ROI selection for CSD
+    logger.info("📍 Step 2/2: Select ROI for CSD detector...")
+    logger.info("   Draw a rectangle around the static region")
+    logger.info("   Press ENTER when done, ESC to cancel")
+
+    cv.destroyAllWindows()  # Close previous window
+    roi = cv.selectROI("Select ROI for CSD Detector", baseline_frame, fromCenter=False, showCrosshair=True)
+    cv.destroyAllWindows()
+
+    if roi[2] > 0 and roi[3] > 0:  # Valid ROI selected
+        x, y, w, h = roi
+        logger.info(f"✅ ROI selected: x={x}, y={y}, width={w}, height={h}")
+
+        # Update CSD detector's ROI configuration
+        runner.camshift_detector.region_manager.roi = {
+            "x": int(x),
+            "y": int(y),
+            "width": int(w),
+            "height": int(h)
+        }
+
+        # Set CSD baseline with the selected ROI
+        logger.info("🎯 Setting CSD baseline with selected ROI...")
+        runner.camshift_detector.set_baseline(baseline_frame)
+        runner.baseline_set = True
+        logger.info("✅ Baseline setup complete!")
+    else:
+        logger.error("❌ No ROI selected, cannot continue")
+        cap.release()
+        return
+
+    # Continuous processing loop
+    logger.info("🔄 Starting live processing...")
+    frame_times = []
+    frame_count = 0
+    last_capture_time = time.time()
+
+    while True:
+        frame_start = time.time()
+
+        # Frame rate throttling
+        if target_fps:
+            time_since_last = frame_start - last_capture_time
+            if time_since_last < frame_delay:
+                # Sleep for remaining time
+                sleep_time = frame_delay - time_since_last
+                time.sleep(sleep_time)
+                frame_start = time.time()
+
+        # Capture frame
+        ret, frame = cap.read()
+        if not ret:
+            logger.warning("⚠️  Failed to read frame, ending session")
+            break
+
+        last_capture_time = frame_start
+
+        # Process frame
+        result = runner.process_frame(frame, frame_id=f"frame_{frame_count}")
+        frame_count += 1
+
+        # Log result
+        logger_obj.log_frame(result)
+
+        # Calculate FPS
+        frame_times.append(time.time() - frame_start)
+        recent_fps = 1.0 / np.mean(frame_times[-30:]) if frame_times else 0.0
+
+        # Create 4-quadrant display
+        combined_display = create_4quadrant_display_mode_a(
+            baseline_frame=baseline_frame,
+            current_frame=frame,
+            result=result,
+            config=config,
+            frame_idx=frame_count,
+            total_frames=-1,  # Live mode, no total
+            fps=recent_fps,
+            show_features=show_features,
+            charuco_detector=charuco_detector,
+            K=runner.K,
+            dist=runner.dist,
+            detector_runner=runner
+        )
+
+        # Display
+        cv.imshow("Online Mode A: 4-Quadrant Comparison", combined_display)
+
+        # Non-blocking key check (1ms wait)
+        key = cv.waitKey(1) & 0xFF
+
+        # Handle keyboard controls
+        if key == ord('b'):
+            # Update baseline (ChArUco + CSD with ROI)
+            logger.info("🎯 Updating baseline...")
+
+            # Step 1: Detect ChArUco baseline
+            frame_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY) if len(frame.shape) == 3 else frame
+
+            from tools.aruco.camshift_annotator import estimate_pose_charuco
+            pose_result = estimate_pose_charuco(
+                frame_gray,
+                charuco_detector,
+                config["charuco_board"],
+                runner.K,
+                runner.dist
+            )
+
+            if pose_result is not None:
+                rvec, tvec, n_corners = pose_result
+                runner.tvec_baseline = tvec
+                logger.info(f"✅ ChArUco baseline updated ({n_corners} corners)")
+
+                # Step 2: ROI selection for CSD
+                logger.info("📍 Select new ROI for CSD detector...")
+                cv.destroyWindow("Online Mode A: 4-Quadrant Comparison")
+                roi = cv.selectROI("Select ROI for CSD Detector", frame, fromCenter=False, showCrosshair=True)
+
+                if roi[2] > 0 and roi[3] > 0:
+                    x, y, w, h = roi
+                    logger.info(f"✅ New ROI: x={x}, y={y}, width={w}, height={h}")
+
+                    # Update CSD ROI and baseline
+                    runner.camshift_detector.region_manager.roi = {
+                        "x": int(x), "y": int(y), "width": int(w), "height": int(h)
+                    }
+                    runner.camshift_detector.set_baseline(frame)
+                    baseline_frame = frame.copy()
+                    logger.info("✅ Baseline updated successfully")
+                else:
+                    logger.warning("❌ No ROI selected, keeping previous baseline")
+            else:
+                logger.warning("❌ Baseline update failed (ChArUco not detected)")
+        elif key == ord('f'):
+            show_features = not show_features
+            logger.info(f"Feature display: {'ON' if show_features else 'OFF'}")
+        elif key == ord('e'):
+            # Export CSV
+            csv_path = logger_obj.save_csv()
+            logger.info(f"📊 Exported CSV: {csv_path}")
+        elif key == ord('s'):
+            # Save snapshot
+            snapshot_path = output_dir / f"snapshot_frame_{frame_count:04d}.png"
+            cv.imwrite(str(snapshot_path), combined_display)
+            logger.info(f"📸 Snapshot saved: {snapshot_path}")
+        elif key == ord('q'):
+            logger.info("⏹️  User requested quit")
+            break
+
+    # Cleanup
+    cap.release()
+    cv.destroyAllWindows()
+
+    # Save final results
+    logger.info("💾 Saving final results...")
+    log_path = logger_obj.save_log()
+    logger.info(f"   Log saved: {log_path}")
+
+    # Generate MSE graph
+    try:
+        graph_path = logger_obj.generate_mse_graph()
+        logger.info(f"   MSE graph saved: {graph_path}")
+    except ValueError as e:
+        logger.warning(f"   MSE graph generation failed: {e}")
+
+    logger.info("🎉 Online Mode A session complete!")
+
+
 def main():
     """Main entry point."""
     # Parse and validate arguments
@@ -654,6 +1387,10 @@ def main():
         run_offline_comparison(args, config)
     elif args.mode == "online":
         run_online_comparison(args, config)
+    elif args.mode == "mode-a":
+        run_offline_mode_a(args, config)
+    elif args.mode == "online-mode-a":
+        run_online_mode_a(args, config)
     else:
         logger.error(f"Invalid mode: {args.mode}")
         sys.exit(1)
